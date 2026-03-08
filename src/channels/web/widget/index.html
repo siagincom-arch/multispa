@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIA MULTISPA — Чат</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Кнопка открытия чата -->
+<div id="chat-toggle" class="chat-toggle" onclick="toggleChat()">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <span class="chat-badge" id="chat-badge" style="display:none">1</span>
+</div>
+
+<!-- Окно чата -->
+<div id="chat-window" class="chat-window hidden">
+    <!-- Заголовок -->
+    <div class="chat-header">
+        <div class="chat-header-info">
+            <div class="chat-avatar">🏗️</div>
+            <div>
+                <div class="chat-title">SIA «MULTISPA»</div>
+                <div class="chat-subtitle" id="chat-status">Онлайн</div>
+            </div>
+        </div>
+        <button class="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+
+    <!-- Сообщения -->
+    <div class="chat-messages" id="chat-messages">
+        <!-- Сообщения добавляются динамически -->
+    </div>
+
+    <!-- Ввод -->
+    <div class="chat-input-area">
+        <input
+            type="text"
+            id="chat-input"
+            class="chat-input"
+            placeholder="Введите сообщение..."
+            autocomplete="off"
+            onkeydown="if(event.key==='Enter') sendMessage()"
+        >
+        <button class="chat-send" onclick="sendMessage()" id="chat-send-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Powered by -->
+    <div class="chat-footer">
+        <a href="https://betonaveidni.lv" target="_blank">betonaveidni.lv</a>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat.js"></script>
+</body>
+</html>
