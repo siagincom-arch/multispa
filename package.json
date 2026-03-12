@@ -19,12 +19,18 @@
   "author": "SIA MULTISPA",
   "license": "ISC",
   "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.49.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "grammy": "^1.35.0",
+    "lucide-react": "^0.577.0",
     "socket.io": "^4.8.3",
+    "tailwind-merge": "^3.5.0",
     "winston": "^3.17.0"
   },
   "devDependencies": {

@@ -1,30 +1,55 @@
 // Bot Multispa — Dialog FSM (Finite State Machine)
-// Manages the 9-step conversation flow
+// Manages the 10-step conversation flow
 const logger = require('./utils/logger');
 
 /**
- * Dialog states (9 steps from the spec)
+ * Dialog states (10 steps from the spec)
  */
 const STATES = {
     WELCOME: 'welcome',           // Step 1: Greeting + language selection
     LANGUAGE_SELECTED: 'lang',    // Language chosen → show main menu
     MAIN_MENU: 'main_menu',      // Main menu displayed
-    INTEREST: 'interest',         // Step 3: Rent or purchase?
-    RENT_DETAILS: 'rent_details', // Step 4: Rental details
-    BUY_DETAILS: 'buy_details',  // Step 5: Purchase details
-    DELIVERY: 'delivery',         // Step 6: Delivery info
-    CONTACTS: 'contacts',         // Step 7: Collect contact info
-    FAREWELL: 'farewell',         // Step 9: Goodbye
+    CONSULTATION: 'consultation', // Step 3: Equipment consultation & comparison
+    INTEREST: 'interest',         // Step 4: Rent or purchase?
+    RENT_DETAILS: 'rent_details', // Step 5: Rental details + price estimate
+    BUY_DETAILS: 'buy_details',  // Step 6: Purchase details
+    DELIVERY: 'delivery',         // Step 7: Delivery info
+    CONTACTS: 'contacts',         // Step 8: Collect contact info
+    FAREWELL: 'farewell',         // Step 10: Goodbye
 
     // Sub-states
     EQUIPMENT_BROWSE: 'equipment_browse',
     EQUIPMENT_CATEGORY: 'equipment_category',
     FAQ_VIEW: 'faq_view',
     AWAITING_FILE: 'awaiting_file',
+    AWAITING_AREA: 'awaiting_area', // Waiting for area (m²) for price estimate
 };
 
 // In-memory session store
 const sessions = new Map();
+
+// Session TTL: 24 hours
+const SESSION_TTL = 24 * 60 * 60 * 1000;
+// Cleanup interval: every hour
+const CLEANUP_INTERVAL = 60 * 60 * 1000;
+
+// Periodically clean up expired sessions to prevent memory leaks
+const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    let cleaned = 0;
+    for (const [userId, session] of sessions) {
+        if (now - session.lastActivity > SESSION_TTL) {
+            sessions.delete(userId);
+            cleaned++;
+        }
+    }
+    if (cleaned > 0) {
+        logger.debug('Session cleanup', { cleaned, remaining: sessions.size });
+    }
+}, CLEANUP_INTERVAL);
+
+// Don't prevent process exit
+if (cleanupTimer.unref) cleanupTimer.unref();
 
 /**
  * Get or create a session for a user

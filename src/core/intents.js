@@ -21,6 +21,9 @@ const INTENTS = {
     GREETING: 'greeting',
     FAREWELL: 'farewell',
     THANKS: 'thanks',
+    CONSULTATION: 'consultation',
+    COMPARISON: 'comparison',
+    PRICE_ESTIMATE: 'price_estimate',
     UNKNOWN: 'unknown',
 };
 
@@ -124,6 +127,30 @@ const intentPatterns = [
             /(specialist|manager|consultant|engineer)/i,
         ],
     },
+    {
+        intent: INTENTS.CONSULTATION,
+        patterns: [
+            /(какие.*выбрать|что лучше|посоветуй|подскаж|помоги.*выбрать|что подходит|что нужно для|подобрать|не знаю.*что)/i,
+            /(ko\s*izvēlēties|kas\s*labāk|ieteikt|palīdzēt\s*izvēlēties|ko\s*izvēlēties)/i,
+            /(which.*choose|what.*better|recommend|help.*choose|what.*need|suggest|not\s*sure)/i,
+        ],
+    },
+    {
+        intent: INTENTS.COMPARISON,
+        patterns: [
+            /(разниц|отличи|сравни|чем.*отличает|в чём.*разница|versus|vs)/i,
+            /(atšķir|salīdzin)/i,
+            /(differ|compar|versus|vs\b|distinction)/i,
+        ],
+    },
+    {
+        intent: INTENTS.PRICE_ESTIMATE,
+        patterns: [
+            /(рассчита|расчёт|расчет|посчита|калькулят|примерн.*стоимость|ориентировочн)/i,
+            /(aprēķin|kalkulēt)/i,
+            /(calculat|estimat)/i,
+        ],
+    },
 ];
 
 /**
@@ -165,6 +192,9 @@ function intentToAction(intent) {
         [INTENTS.FAQ]: 'faq',
         [INTENTS.DELIVERY]: 'delivery',
         [INTENTS.SPECIALIST]: 'specialist',
+        [INTENTS.CONSULTATION]: 'consultation',
+        [INTENTS.COMPARISON]: 'consultation',
+        [INTENTS.PRICE_ESTIMATE]: 'estimate_price',
     };
     return mapping[intent] || null;
 }

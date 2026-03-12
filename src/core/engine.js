@@ -1,5 +1,5 @@
 // Bot Multispa — Main Engine (Message Router)
-const { t } = require('../i18n');
+const { t, SUPPORTED_LANGUAGES } = require('../i18n');
 const { getUserLanguage, setUserLanguage, detectLanguage } = require('./language');
 const { STATES, getState, setState, setData, getData, getAllData, resetSession } = require('./dialog');
 const { recognizeIntent, intentToAction } = require('./intents');
@@ -15,6 +15,30 @@ const qualification = require('./services/qualification');
 const pricing = require('./services/pricing');
 const documents = require('./services/documents');
 const contacts = require('./services/contacts');
+
+/**
+ * Detect language from text and log client message (shared logic)
+ */
+async function withClientContext(userId, text, lang, channel) {
+    const detectedLang = detectLanguage(text);
+    if (detectedLang && detectedLang !== lang) {
+        setUserLanguage(userId, detectedLang);
+        lang = detectedLang;
+    }
+
+    const client = await Clients.findOrCreate(userId, channel);
+    if (client) {
+        await DialogLogs.log({
+            clientId: client.id,
+            channel,
+            language: lang,
+            message: text,
+            role: 'client',
+        });
+    }
+
+    return { lang, client };
+}
 
 /**
  * Process incoming message and return response(s)
@@ -41,6 +65,9 @@ async function processMessage({ text, userId, channel = 'telegram', files, callb
     switch (state) {
         case STATES.WELCOME:
             return handleWelcome(userId, text, channel);
+
+        case STATES.AWAITING_AREA:
+            return handleAreaInput(userId, text, lang, channel);
 
         case STATES.LANGUAGE_SELECTED:
         case STATES.MAIN_MENU:
@@ -112,119 +139,116 @@ async function selectLanguage(userId, lang, channel) {
 }
 
 /**
+ * Callback handlers — exact match
+ */
+const callbackHandlers = {
+    equipment: (userId, lang) => {
+        setState(userId, STATES.EQUIPMENT_BROWSE);
+        return consultation.getEquipmentCategories(lang);
+    },
+    consultation: (userId, lang) => {
+        setState(userId, STATES.CONSULTATION);
+        return consultation.getConsultationHelp(lang);
+    },
+    compare_scaffolding: (_userId, lang) => consultation.getScaffoldingComparison(lang),
+    compare_formwork: (_userId, lang) => consultation.getFormworkComparison(lang),
+    estimate_price: (userId, lang) => pricing.askEstimateCategory(userId, lang),
+    prices: (_userId, lang) => pricing.getPriceInfo(lang),
+    order: (userId, lang) => qualification.askRentOrBuy(userId, lang),
+    type_rent: (userId, lang) => qualification.handleRentSelected(userId, lang),
+    has_drawings_yes: (userId, lang) => qualification.handleHasDrawings(userId, lang),
+    has_drawings_no: (userId, lang) => qualification.handleNoDrawings(userId, lang),
+    type_purchase: (userId, lang) => qualification.handlePurchaseSelected(userId, lang),
+    contacts: (_userId, lang) => contacts.getCompanyContacts(lang),
+    working_hours: (_userId, lang) => contacts.getWorkingHours(lang),
+    specialist: (_userId, lang) => contacts.redirectToSpecialist(lang),
+    delivery: (userId, lang) => contacts.askForContacts(userId, lang),
+    upload: (userId, lang) => documents.requestFileUpload(userId, lang),
+    main_menu: (userId, lang) => {
+        setState(userId, STATES.MAIN_MENU);
+        return [{ text: t(lang, 'main_menu'), keyboard: getMainMenuKeyboard(lang) }];
+    },
+};
+
+/**
+ * Callback handlers — prefix match (order matters: checked top to bottom)
+ */
+const prefixHandlers = [
+    {
+        prefix: 'lang_',
+        handler: (userId, value, lang, channel) => {
+            if (!SUPPORTED_LANGUAGES.includes(value)) {
+                logger.warn('Invalid language callback', { userId, value });
+                return [{ text: t(lang || 'ru', 'main_menu'), keyboard: getMainMenuKeyboard(lang || 'ru') }];
+            }
+            return selectLanguage(userId, value, channel);
+        },
+    },
+    {
+        prefix: 'cat_',
+        handler: (_userId, value, lang) => consultation.getEquipmentInfo(value, lang),
+    },
+    {
+        prefix: 'est_',
+        handler: (userId, value, lang) => pricing.askForArea(userId, value, lang),
+    },
+    {
+        prefix: 'rent_',
+        handler: (userId, value, lang) => qualification.handleRentCategory(userId, value, lang),
+    },
+    {
+        prefix: 'buy_',
+        handler: (userId, value, lang) => qualification.handleBuyCategory(userId, value, lang),
+    },
+];
+
+/**
  * Handle callback data from inline buttons
  */
 async function handleCallback(userId, data, lang, channel) {
-    // Language selection
-    if (data.startsWith('lang_')) {
-        const selectedLang = data.replace('lang_', '');
-        return selectLanguage(userId, selectedLang, channel);
+    // Limit callback data length (Telegram allows 64 bytes, web has no limit)
+    if (typeof data !== 'string' || data.length > 64) {
+        logger.warn('Invalid callback data', { userId, dataLength: data?.length });
+        return [{ text: t(lang || 'ru', 'main_menu'), keyboard: getMainMenuKeyboard(lang || 'ru') }];
     }
 
-    // Equipment categories
-    if (data === 'equipment') {
-        setState(userId, STATES.EQUIPMENT_BROWSE);
-        return consultation.getEquipmentCategories(lang);
+    // Exact match handlers
+    const exactHandler = callbackHandlers[data];
+    if (exactHandler) {
+        return exactHandler(userId, lang, channel);
     }
 
-    // Equipment category selected
-    if (data.startsWith('cat_')) {
-        const category = data.replace('cat_', '');
-        return consultation.getEquipmentInfo(category, lang);
+    // Prefix match handlers
+    for (const { prefix, handler } of prefixHandlers) {
+        if (data.startsWith(prefix)) {
+            const value = data.slice(prefix.length);
+            return handler(userId, value, lang, channel);
+        }
     }
 
-    // Prices
-    if (data === 'prices') {
-        return pricing.getPriceInfo(lang);
-    }
-
-    // Order (rent or buy)
-    if (data === 'order') {
-        return qualification.askRentOrBuy(userId, lang);
-    }
-
-    // Rent selected
-    if (data === 'type_rent') {
-        return qualification.handleRentSelected(userId, lang);
-    }
-
-    // Rent category selected → ask for details
-    if (data.startsWith('rent_')) {
-        const equipCat = data.replace('rent_', '');
-        return qualification.handleRentCategory(userId, equipCat, lang);
-    }
-
-    // Has drawings?
-    if (data === 'has_drawings_yes') {
-        return qualification.handleHasDrawings(userId, lang);
-    }
-
-    if (data === 'has_drawings_no') {
-        return qualification.handleNoDrawings(userId, lang);
-    }
-
-    // Purchase selected
-    if (data === 'type_purchase') {
-        return qualification.handlePurchaseSelected(userId, lang);
-    }
-
-    if (data.startsWith('buy_')) {
-        const equipCat = data.replace('buy_', '');
-        return qualification.handleBuyCategory(userId, equipCat, lang);
-    }
-
-    // FAQ
+    // FAQ — requires async, handled separately
     if (data === 'faq') {
         const faqItems = await knowledge.getFAQ(lang);
         if (faqItems.length === 0) {
             return [{ text: '❓ ...', keyboard: getBackKeyboard(lang) }];
         }
         const faqText = faqItems.map(f => `❓ *${f.question}*\n${f.answer}`).join('\n\n');
-        return [{
-            text: faqText,
-            keyboard: getBackKeyboard(lang),
-        }];
+        return [{ text: faqText, keyboard: getBackKeyboard(lang) }];
     }
 
-    // Contacts
-    if (data === 'contacts') {
-        return contacts.getCompanyContacts(lang);
-    }
+    // Unknown callback — return to main menu
+    logger.warn('Unknown callback data', { userId, data });
+    return [{ text: t(lang || 'ru', 'main_menu'), keyboard: getMainMenuKeyboard(lang || 'ru') }];
+}
 
-    // Working hours
-    if (data === 'working_hours') {
-        return contacts.getWorkingHours(lang);
-    }
+/**
+ * Handle text input when awaiting area (m²) for price estimate
+ */
+async function handleAreaInput(userId, text, lang, channel) {
+    if (!text) return [];
 
-    // Specialist redirect
-    if (data === 'specialist') {
-        return contacts.redirectToSpecialist(lang);
-    }
-
-    // Delivery
-    if (data === 'delivery') {
-        return contacts.askForContacts(userId, lang);
-    }
-
-    // Upload drawing
-    if (data === 'upload') {
-        return documents.requestFileUpload(userId, lang);
-    }
-
-    // Back to main menu
-    if (data === 'main_menu') {
-        setState(userId, STATES.MAIN_MENU);
-        return [{
-            text: t(lang, 'main_menu'),
-            keyboard: getMainMenuKeyboard(lang),
-        }];
-    }
-
-    // Default
-    return [{
-        text: t(lang, 'main_menu'),
-        keyboard: getMainMenuKeyboard(lang),
-    }];
+    const ctx = await withClientContext(userId, text, lang, channel);
+    return pricing.handleAreaInput(userId, text, ctx.lang);
 }
 
 /**
@@ -233,17 +257,8 @@ async function handleCallback(userId, data, lang, channel) {
 async function handleMainMenuInput(userId, text, lang, channel) {
     if (!text) return [];
 
-    // Log client message
-    const client = await Clients.findOrCreate(userId, channel);
-    if (client) {
-        await DialogLogs.log({
-            clientId: client.id,
-            channel,
-            language: lang,
-            message: text,
-            role: 'client',
-        });
-    }
+    const ctx = await withClientContext(userId, text, lang, channel);
+    lang = ctx.lang;
 
     // If in contacts state, save contact info
     if (getState(userId) === STATES.CONTACTS) {
@@ -256,9 +271,9 @@ async function handleMainMenuInput(userId, text, lang, channel) {
 
     if (action) {
         // Log recognized intent
-        if (client) {
+        if (ctx.client) {
             await DialogLogs.log({
-                clientId: client.id,
+                clientId: ctx.client.id,
                 channel,
                 language: lang,
                 message: `[intent: ${intent}]`,
@@ -276,9 +291,15 @@ async function handleMainMenuInput(userId, text, lang, channel) {
     }];
 }
 
-// handleContactsInput moved to services/contacts.js
+/**
+ * Handle contacts input (delegates to contacts service)
+ */
+async function handleContactsInput(userId, text, lang, channel) {
+    if (!text) return [];
 
-// handleFileUpload moved to services/documents.js
+    const ctx = await withClientContext(userId, text, lang, channel);
+    return contacts.handleContactInput(userId, text, ctx.lang, channel);
+}
 
 /**
  * Generate main menu keyboard
@@ -287,8 +308,10 @@ function getMainMenuKeyboard(lang) {
     return {
         type: 'inline',
         buttons: [
+            [{ text: t(lang, 'consultation'), data: 'consultation' }],
             [{ text: t(lang, 'equipment'), data: 'equipment' }],
             [{ text: t(lang, 'prices'), data: 'prices' }],
+            [{ text: t(lang, 'estimate_price'), data: 'estimate_price' }],
             [{ text: t(lang, 'order'), data: 'order' }],
             [{ text: t(lang, 'upload_drawing'), data: 'upload' }],
             [{ text: t(lang, 'faq'), data: 'faq' }],

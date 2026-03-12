@@ -94,8 +94,8 @@ async function handleContactInput(userId, text, lang, channel) {
 
             logger.info('Contact info saved, inquiry created', {
                 userId,
-                email: updates.email,
-                phone: updates.phone,
+                email: updates.email ? `${updates.email[0]}***@***` : null,
+                phone: updates.phone ? `***${updates.phone.slice(-4)}` : null,
             });
         }
 

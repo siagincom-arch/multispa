@@ -18,10 +18,18 @@ function createWebServer() {
     const app = express();
     const httpServer = createServer(app);
 
-    // Socket.io с CORS
+    // Socket.io с CORS — только разрешённые домены
+    const allowedOrigins = [
+        'https://betonaveidni.lv',
+        'https://www.betonaveidni.lv',
+    ];
+    if (config.app.env === 'development') {
+        allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+    }
+
     const io = new Server(httpServer, {
         cors: {
-            origin: '*',
+            origin: allowedOrigins,
             methods: ['GET', 'POST'],
         },
     });

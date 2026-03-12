@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIA «MULTISPA» — Демо чат-бота</title>
+    <meta name="description"
+        content="Демо виджета чат-бота для SIA MULTISPA — аренда и продажа строительных лесов и опалубки">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #6d28d9;
+            --primary-light: #a78bfa;
+            --accent: #f472b6;
+            --accent-glow: rgba(244, 114, 182, 0.3);
+            --bg-dark: #0f0a1a;
+            --bg-darker: #080510;
+            --bg-card: #1a1228;
+            --bg-message-bot: #1a1228;
+            --bg-message-user: #7c3aed;
+            --text-primary: #f1f0f9;
+            --text-secondary: #a598c4;
+            --text-on-primary: #ffffff;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --radius: 20px;
+            --radius-sm: 12px;
+            --radius-msg: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-darker);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* ─── Hero Section ─── */
+        .hero {
+            position: relative;
+            padding: 60px 24px 40px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(37, 99, 235, 0.12);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary-light);
+            margin-bottom: 24px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .hero h1 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            animation: fadeInDown 0.6s ease 0.1s both;
+        }
+
+        .hero h1 .gradient {
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: clamp(15px, 2vw, 18px);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 32px;
+            line-height: 1.6;
+            animation: fadeInDown 0.6s ease 0.2s both;
+        }
+
+        .hero-features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            animation: fadeInDown 0.6s ease 0.3s both;
+        }
+
+        .hero-feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .hero-feature .icon {
+            font-size: 16px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Demo Container ─── */
+        .demo-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 0 24px 60px;
+            animation: fadeIn 0.8s ease 0.4s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-wrapper {
+            width: 420px;
+            max-width: 100%;
+        }
+
+        /* ─── Chat Window ─── */
+        .chat-window {
+            width: 100%;
+            height: 620px;
+            max-height: calc(100vh - 300px);
+            min-height: 450px;
+            background: var(--bg-dark);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow), 0 0 80px rgba(37, 99, 235, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        /* ─── Header ─── */
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--bg-card));
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-title {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: -0.3px;
+        }
+
+        .chat-subtitle {
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chat-subtitle::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+
+        .chat-site-link {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .chat-site-link:hover {
+            color: var(--primary-light);
+        }
+
+        /* ─── Messages Area ─── */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        /* ─── Message ─── */
+        .message {
+            max-width: 88%;
+            animation: msgIn 0.3s ease;
+        }
+
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: var(--radius-msg);
+            font-size: 14px;
+            line-height: 1.55;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message.bot .message-bubble {
+            background: var(--bg-message-bot);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--text-on-primary);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .message.user .message-time {
+            text-align: right;
+        }
+
+        /* ─── Buttons ─── */
+        .message-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .message-buttons .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .message-buttons button {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--primary-light);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .message-buttons button:hover {
+            background: rgba(37, 99, 235, 0.25);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .message-buttons button:active {
+            transform: translateY(0);
+        }
+
+        .message-buttons button:disabled {
+            opacity: 0.4;
+            cursor: default;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ─── Typing Indicator ─── */
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 14px 18px;
+            align-self: flex-start;
+            background: var(--bg-message-bot);
+            border-radius: var(--radius-msg);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(-5px);
+            }
+        }
+
+        /* ─── Input ─── */
+        .chat-input-area {
+            padding: 14px 16px;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+        }
+
+        .chat-send {
+            width: 46px;
+            height: 46px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s;
+            flex-shrink: 0;
+        }
+
+        .chat-send:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        /* ─── Footer ─── */
+        .chat-footer {
+            padding: 10px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .chat-footer a {
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .chat-footer a:hover {
+            color: var(--primary-light);
+        }
+
+        /* ─── Voice buttons ─── */
+        .chat-mic,
+        .chat-tts-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-mic:hover,
+        .chat-tts-toggle:hover {
+            color: var(--accent);
+            background: rgba(244, 114, 182, 0.1);
+        }
+
+        .chat-mic.recording {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+            animation: pulse-mic 1.5s ease-in-out infinite;
+        }
+
+        .chat-tts-toggle.active {
+            color: var(--accent);
+            background: rgba(244, 114, 182, 0.15);
+        }
+
+        .chat-tts-toggle.active svg {
+            filter: drop-shadow(0 0 4px var(--accent));
+        }
+
+        @keyframes pulse-mic {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .voice-status {
+            text-align: center;
+            font-size: 11px;
+            color: #ef4444;
+            padding: 4px;
+            animation: fade-in 0.3s ease;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 480px) {
+            .hero {
+                padding: 32px 16px 24px;
+            }
+
+            .demo-container {
+                padding: 0 12px 40px;
+            }
+
+            .chat-window {
+                height: calc(100vh - 220px);
+                min-height: 400px;
+            }
+
+            .hero-features {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-badge">💬 Виртуальный ассистент Анна</div>
+        <h1>Анна — <span class="gradient">SIA «MULTISPA»</span></h1>
+        <p>Привет! Я Анна, ваш виртуальный ассистент. Помогу с выбором строительных лесов и опалубки. Говорю на 3
+            языках!</p>
+        <div class="hero-features">
+            <div class="hero-feature"><span class="icon">🎓</span> Экспертные консультации</div>
+            <div class="hero-feature"><span class="icon">💰</span> Расчёт стоимости</div>
+            <div class="hero-feature"><span class="icon">🌐</span> LV / RU / EN</div>
+        </div>
+    </section>
+
+    <!-- Demo Chat -->
+    <div class="demo-container">
+        <div class="chat-wrapper">
+            <div class="chat-window" id="chat-window">
+                <!-- Header -->
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-avatar"><img src="anna_avatar.png" alt="Anna"></div>
+                        <div>
+                            <div class="chat-title">Анна • SIA «MULTISPA»</div>
+                            <div class="chat-subtitle">Онлайн</div>
+                        </div>
+                    </div>
+                    <a href="https://betonaveidni.lv" target="_blank" class="chat-site-link">betonaveidni.lv</a>
+                </div>
+
+                <!-- Messages -->
+                <div class="chat-messages" id="chat-messages"></div>
+
+                <!-- Input -->
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Введите сообщение..."
+                        autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
+                    <button class="chat-mic" onclick="toggleVoice()" id="chat-mic-btn" title="Голосовой ввод">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button class="chat-tts-toggle" onclick="toggleTTS()" id="chat-tts-btn" title="Озвучивание ответов">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" id="tts-wave-1"></path>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" id="tts-wave-2"></path>
+                        </svg>
+                    </button>
+                    <button class="chat-send" onclick="sendMessage()" id="chat-send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Footer -->
+                <div class="chat-footer">
+                    <a href="https://betonaveidni.lv" target="_blank">betonaveidni.lv — SIA «MULTISPA»</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══ BOT MULTISPA — Demo (client-side simulation) ═══
+
+        // Current state
+        let currentLang = null;
+        let dialogState = 'welcome';
+        let sessionData = {};
+
+        // ─── i18n (полная поддержка 3 языков) ───
+        const i18n = {
+            ru: {
+                lang_selected: "Русский язык выбран ✅",
+                main_menu: "Чем могу помочь? Выберите интересующий раздел или задайте свой вопрос:",
+                consultation: "🎓 Помощь в выборе",
+                equipment: "🏗️ Оборудование",
+                prices: "💰 Цены аренды",
+                estimate_price: "📊 Рассчитать стоимость",
+                order: "🛒 Заказать",
+                contacts: "📞 Контакты",
+                working_hours: "⏰ Время работы",
+                back: "⬅️ Назад",
+                main_menu_btn: "⬅️ Главное меню",
+                scaffolding: "🔩 Строительные леса",
+                wall_formwork: "🧱 Опалубка стен",
+                slab_formwork: "📐 Опалубка перекрытий",
+                contact_specialist: "👷 Связаться со специалистом",
+                compare_scaffolding: "🔍 Сравнить леса",
+                compare_formwork: "🔍 Сравнить опалубку",
+                modular_scaffolding: "Модульные леса",
+                frame_scaffolding: "Фасадные леса",
+                rental: "🔄 Аренда",
+                purchase: "🛒 Покупка",
+                compare_types: "🔍 Сравнить типы",
+                compare_with_slab: "🔍 Сравнить с опалубкой перекрытий",
+                compare_with_wall: "🔍 Сравнить с опалубкой стен",
+                help_choose: "🎓 Помощь в выборе",
+                consultation_help: "🎓 Помогу разобраться в нашем оборудовании!\n\nМы предлагаем три категории:\n\n🔩 Строительные леса — для работ на высоте (фасады, отделка, утепление)\n   • Рамные (фасадные) — простые и экономичные\n   • Модульные — универсальные, для сложных объектов\n\n🧱 Стеновая опалубка (PIONBOX MINI) — для заливки стен, фундаментов, колонн\n\n📐 Опалубка перекрытий (RINGER) — для заливки потолков и перекрытий\n\n💡 Если не уверены, что нужно — опишите задачу и я подскажу!\n\nВыберите, что хотите узнать подробнее:",
+                scaffolding_comparison: "🔍 Сравнение типов строительных лесов:\n\n🔩 Рамные (фасадные) леса:\n• Принцип: «труба в трубу», соединение связями\n• Простой монтаж без мелких деталей\n• Идеальны для: фасадных работ, утепления, отделки\n• 💰 Аренда: 1,40 €/м² + ПВН / мес.\n\n🔩 Модульные леса:\n• Принцип: клиновое крепление, самоблокирующиеся клинья\n• Быстрая установка и демонтаж\n• Выдерживают тяжёлые нагрузки\n• Подходят для зданий сложной конфигурации\n• 💰 Аренда: 2,20 €/м² + ПВН / мес.\n\n📌 Рекомендация: Для стандартных фасадных работ — рамные (дешевле). Для промышленных объектов — модульные.\n\n⚠️ Это ориентировочные цены. Окончательную стоимость и скидки предоставит сотрудник компании.",
+                formwork_comparison: "🔍 Сравнение типов опалубки:\n\n🧱 Стеновая / фундаментная (PIONBOX MINI):\n• Назначение: стены, фундаменты, колонны\n• Удерживает горизонтальное давление жидкого бетона\n• Панели: высота 90–150 см, ширина 20–90 см\n• Самая большая панель весит всего 45 кг\n• 💰 Аренда: 6,00 €/м² + ПВН / нед.\n\n📐 Опалубка перекрытий (RINGER, Австрия):\n• Назначение: потолки, перекрытия, плиты\n• Несёт вертикальную нагрузку сырого бетона\n• Элементы: телескопические стойки, треноги, H20 балки\n• Быстрая установка\n• 💰 Аренда: 3,00 €/м² + ПВН / нед.\n\n📌 Простое правило: Для стен → стеновая опалубка. Для потолков → опалубка перекрытий.\n\n⚠️ Это ориентировочные цены. Окончательную стоимость и скидки предоставит сотрудник компании.",
+                prices_info: "💰 Ориентировочные цены аренды:\n\n🔩 Модульные леса — 2,20 €/м² + ПВН / мес.\n🔩 Фасадные леса — 1,40 €/м² + ПВН / мес.\n🧱 Опалубка стен (h=1,20 м) — 6,00 €/м² + ПВН / нед.\n📐 Опалубка перекрытий — 3,00 €/м² + ПВН / нед.\n\n⚠️ Это ориентировочные цены. Окончательную стоимость, а также возможные скидки предоставит сотрудник компании.\n\n💡 Хотите рассчитать примерную стоимость для вашего объекта?",
+                contacts_info: "📞 Контакты:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n🌐 betonaveidni.lv\n\n⏰ Пн–Пт 9:00–18:00\n\n⚠️ Важно: время посещения, получения и сдачи оборудования необходимо согласовывать заранее, так как в офисе не находится постоянно сотрудник.\n📌 Свяжитесь по телефону или email, чтобы договориться о встрече.",
+                working_hours_info: "⏰ Время работы:\nПонедельник — Пятница: 9:00 — 18:00\nСуббота — Воскресенье: выходной\n\n⚠️ Важно: в офисе не находится постоянно сотрудник. Время посещения и получения/сдачи оборудования необходимо согласовывать заранее.\n\n📞 Позвоните, чтобы назначить встречу:\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                specialist_redirect: "Для точного расчёта рекомендую связаться со специалистами:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Пн–Пт 9:00–18:00\n⚠️ Согласуйте время визита заранее.",
+                ask_estimate_category: "Для какого оборудования рассчитать стоимость?",
+                ask_area: "📐 Укажите примерную площадь (в м²):",
+                invalid_area: "❌ Пожалуйста, введите число (площадь в м²). Например: 100",
+                ask_rent_or_buy: "Что вас интересует — аренда или покупка?",
+                farewell: "Спасибо за обращение в SIA «MULTISPA»! 🏗️\nУдачи в вашем проекте! 💪\nЕсли появятся вопросы — мы всегда на связи.",
+                order_redirect: "Для подготовки предложения рекомендуем связаться с нашими специалистами:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Пн–Пт 9:00–18:00\n⚠️ Согласуйте время визита заранее.",
+                scaffolding_info: "🔩 Строительные леса\n\nМы предлагаем два типа:\n\n📌 Рамные (фасадные) леса:\n• Монтаж «труба в трубу» без мелких деталей\n• Подходят для зданий сложной конфигурации\n• Аренда: 1,40 €/м² + ПВН / мес.\n\n📌 Модульные леса:\n• Клиновое крепление, самоблокирующиеся клинья\n• Быстрая установка, тяжёлые нагрузки\n• Аренда: 2,20 €/м² + ПВН / мес.\n\n⚠️ Ориентировочные цены. Окончательную стоимость и скидки предоставит сотрудник.",
+                wall_formwork_info: "🧱 Стеновая / фундаментная опалубка — PIONBOX MINI\n\n• Для вертикальных конструкций: стены, фундаменты, колонны\n• Удерживает горизонтальное давление жидкого бетона\n• Панели: высота 90, 120, 150 см; ширина 20–90 см\n• Самая большая панель (90×150 см) весит всего 45 кг\n• Сертификат DIN 68705-3\n\n💰 Аренда: 6,00 €/м² + ПВН / нед.\n\n⚠️ Ориентировочная цена.",
+                slab_formwork_info: "📐 Опалубка перекрытий — RINGER (Австрия)\n\n• Для горизонтальных конструкций: потолки, перекрытия, плиты\n• Несёт вертикальную нагрузку сырого бетона\n• Элементы: телескопические стойки, треноги, головки, H20 балки\n• Быстрая и удобная установка\n\n💰 Аренда: 3,00 €/м² + ПВН / нед.\n\n⚠️ Ориентировочная цена.",
+                equipment_list: "🏗️ Наше оборудование:",
+                estimate_result: "📊 Ориентировочный расчёт:\n{name}: {area} м² × {rate} €/м² = {total} € + ПВН / {period}\n\n⚠️ Это ориентировочная цена.\n\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                greeting_reply: "Здравствуйте! 👋 Чем могу помочь?",
+                placeholder: "Введите сообщение..."
+            },
+            lv: {
+                lang_selected: "Latviešu valoda izvēlēta ✅",
+                main_menu: "Kā es varu palīdzēt? Izvēlieties sadaļu vai uzdodiet jautājumu:",
+                consultation: "🎓 Palīdzība izvēlē",
+                equipment: "🏗️ Iekārtas",
+                prices: "💰 Nomas cenas",
+                estimate_price: "📊 Aprēķināt cenu",
+                order: "🛒 Pasūtīt",
+                contacts: "📞 Kontakti",
+                working_hours: "⏰ Darba laiks",
+                back: "⬅️ Atpakaļ",
+                main_menu_btn: "⬅️ Galvenā izvēlne",
+                scaffolding: "🔩 Celtniecības sastatnes",
+                wall_formwork: "🧱 Sienas veidņi",
+                slab_formwork: "📐 Pārseguma veidņi",
+                contact_specialist: "👷 Sazināties ar speciālistu",
+                compare_scaffolding: "🔍 Salīdzināt sastatnes",
+                compare_formwork: "🔍 Salīdzināt veidņus",
+                modular_scaffolding: "Modulārās sastatnes",
+                frame_scaffolding: "Fasādes sastatnes",
+                rental: "🔄 Noma",
+                purchase: "🛒 Iegāde",
+                compare_types: "🔍 Salīdzināt veidus",
+                compare_with_slab: "🔍 Salīdzināt ar pārseguma veidņiem",
+                compare_with_wall: "🔍 Salīdzināt ar sienas veidņiem",
+                help_choose: "🎓 Palīdzība izvēlē",
+                consultation_help: "🎓 Palīdzēšu izprast mūsu aprīkojumu!\n\nMēs piedāvājam trīs kategorijas:\n\n🔩 Celtniecības sastatnes — darbiem augstumā (fasādes, apdare, siltināšana)\n   • Rāmja (fasādes) — vienkāršas un ekonomiskas\n   • Modulārās — universālas, sarežģītiem objektiem\n\n🧱 Sienas veidņi (PIONBOX MINI) — sienu, pamatu, kolonnu betonēšanai\n\n📐 Pārseguma veidņi (RINGER) — griestu, pārsegumu betonēšanai\n\n💡 Ja neesat pārliecināts — aprakstiet uzdevumu, un es palīdzēšu!\n\nIzvēlieties, ko vēlaties uzzināt:",
+                scaffolding_comparison: "🔍 Sastatņu veidu salīdzinājums:\n\n🔩 Rāmja (fasādes) sastatnes:\n• Princips: «caurule caurulē», savienojums ar saitēm\n• Vienkāršs montāžas process\n• Ideāli: fasādes darbiem, siltināšanai\n• 💰 Noma: 1,40 €/m² + PVN / mēn.\n\n🔩 Modulārās sastatnes:\n• Princips: ķīļveida savienojums\n• Ātra uzstādīšana un demontāža\n• Iztur smagas slodzes\n• 💰 Noma: 2,20 €/m² + PVN / mēn.\n\n📌 Ieteikums: Standarta fasādes darbiem — rāmja (lētākas). Rūpnieciskiem objektiem — modulārās.\n\n⚠️ Orientējošās cenas.",
+                formwork_comparison: "🔍 Veidņu veidu salīdzinājums:\n\n🧱 Sienas / pamatu veidņi (PIONBOX MINI):\n• Mērķis: sienas, pamati, kolonnas\n• Notur šķidrā betona spiedienu\n• Paneļi: 90–150 cm, platums 20–90 cm\n• Lielākais panelis sver tikai 45 kg\n• 💰 Noma: 6,00 €/m² + PVN / ned.\n\n📐 Pārseguma veidņi (RINGER, Austrija):\n• Mērķis: griesti, pārsegumi, plātnes\n• Teleskopiskās statnes, H20 sijas\n• 💰 Noma: 3,00 €/m² + PVN / ned.\n\n📌 Sienām → sienas veidņi. Griestiem → pārseguma veidņi.\n\n⚠️ Orientējošās cenas.",
+                prices_info: "💰 Orientējošās nomas cenas:\n\n🔩 Modulārās sastatnes — 2,20 €/m² + PVN / mēn.\n🔩 Fasādes sastatnes — 1,40 €/m² + PVN / mēn.\n🧱 Sienas veidņi (h=1,20 m) — 6,00 €/m² + PVN / ned.\n📐 Pārseguma veidņi — 3,00 €/m² + PVN / ned.\n\n⚠️ Orientējošās cenas. Galīgo cenu sniegs darbinieks.\n\n💡 Vai vēlaties aprēķināt cenu savam objektam?",
+                contacts_info: "📞 Kontakti:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n🌐 betonaveidni.lv\n\n⏰ Pirmdiena–Piektdiena 9:00–18:00\n\n⚠️ Svarīgi: apmeklējuma laiku saskaņojiet iepriekš.\n📌 Sazinieties pa tālruni vai e-pastu.",
+                working_hours_info: "⏰ Darba laiks:\nPirmdiena — Piektdiena: 9:00 — 18:00\nSestdiena — Svētdiena: brīvdiena\n\n⚠️ Birojā pastāvīgi neatrodas darbinieks.\n\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                specialist_redirect: "Detalizētai konsultācijai sazinieties ar speciālistiem:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Pirmdiena–Piektdiena 9:00–18:00\n⚠️ Saskaņojiet vizītes laiku iepriekš.",
+                ask_estimate_category: "Kuram aprīkojumam aprēķināt cenu?",
+                ask_area: "📐 Norādiet aptuveno platību (m²):",
+                invalid_area: "❌ Lūdzu, ievadiet skaitli (platību m²). Piemēram: 100",
+                ask_rent_or_buy: "Kas jūs interesē?",
+                farewell: "Paldies par uzrunāšanu SIA «MULTISPA»! 🏗️\nVeiksmi jūsu projektā! 💪\nJa būs jautājumi — mēs vienmēr esam sazināmi.",
+                order_redirect: "Piedāvājuma sagatavošanai sazinieties ar speciālistiem:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Pirmdiena–Piektdiena 9:00–18:00\n⚠️ Saskaņojiet vizītes laiku iepriekš.",
+                scaffolding_info: "🔩 Celtniecības sastatnes\n\nMēs piedāvājam divus veidus:\n\n📌 Rāmja (fasādes) sastatnes:\n• Vienkārša montāža\n• Noma: 1,40 €/m² + PVN / mēn.\n\n📌 Modulārās sastatnes:\n• Ķīļveida savienojums\n• Ātra uzstādīšana\n• Noma: 2,20 €/m² + PVN / mēn.\n\n⚠️ Orientējošās cenas.",
+                wall_formwork_info: "🧱 Sienas / pamatu veidņi — PIONBOX MINI\n\n• Sienas, pamati, kolonnas\n• Paneļi: 90, 120, 150 cm\n• Lielākais panelis sver tikai 45 kg\n\n💰 Noma: 6,00 €/m² + PVN / ned.\n\n⚠️ Orientējošā cena.",
+                slab_formwork_info: "📐 Pārseguma veidņi — RINGER (Austrija)\n\n• Griesti, pārsegumi, plātnes\n• Teleskopiskās statnes, H20 sijas\n\n💰 Noma: 3,00 €/m² + PVN / ned.\n\n⚠️ Orientējošā cena.",
+                equipment_list: "🏗️ Mūsu iekārtas:",
+                estimate_result: "📊 Orientējošais aprēķins:\n{name}: {area} m² × {rate} €/m² = {total} € + PVN / {period}\n\n⚠️ Orientējošā cena.\n\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                greeting_reply: "Sveicināti! 👋 Kā varu palīdzēt?",
+                placeholder: "Ievadiet ziņojumu..."
+            },
+            en: {
+                lang_selected: "English language selected ✅",
+                main_menu: "How can I help you? Choose a section or ask your question:",
+                consultation: "🎓 Help me choose",
+                equipment: "🏗️ Equipment",
+                prices: "💰 Rental Prices",
+                estimate_price: "📊 Calculate cost",
+                order: "🛒 Order",
+                contacts: "📞 Contacts",
+                working_hours: "⏰ Working Hours",
+                back: "⬅️ Back",
+                main_menu_btn: "⬅️ Main menu",
+                scaffolding: "🔩 Scaffolding",
+                wall_formwork: "🧱 Wall Formwork",
+                slab_formwork: "📐 Slab Formwork",
+                contact_specialist: "👷 Contact Specialist",
+                compare_scaffolding: "🔍 Compare scaffolding",
+                compare_formwork: "🔍 Compare formwork",
+                modular_scaffolding: "Modular Scaffolding",
+                frame_scaffolding: "Frame Scaffolding",
+                rental: "🔄 Rental",
+                purchase: "🛒 Purchase",
+                compare_types: "🔍 Compare types",
+                compare_with_slab: "🔍 Compare with slab formwork",
+                compare_with_wall: "🔍 Compare with wall formwork",
+                help_choose: "🎓 Help me choose",
+                consultation_help: "🎓 I'll help you understand our equipment!\n\nWe offer three categories:\n\n🔩 Scaffolding — for working at height (facades, finishing, insulation)\n   • Frame (facade) — simple and economical\n   • Modular — versatile, for complex projects\n\n🧱 Wall formwork (PIONBOX MINI) — for walls, foundations, columns\n\n📐 Slab formwork (RINGER) — for ceilings, floor slabs\n\n💡 Not sure what you need? Describe your task and I'll help!\n\nChoose what you'd like to learn more about:",
+                scaffolding_comparison: "🔍 Scaffolding types comparison:\n\n🔩 Frame (Facade) Scaffolding:\n• Pipe-in-pipe connection with bracing\n• Simple assembly\n• Ideal for: facade work, insulation, finishing\n• 💰 Rental: 1.40 €/m² + VAT / month\n\n🔩 Modular Scaffolding:\n• Wedge-lock connection\n• Fast assembly and disassembly\n• Heavy load capacity\n• 💰 Rental: 2.20 €/m² + VAT / month\n\n📌 Recommendation: Frame is more economical for standard work. Modular for industrial projects.\n\n⚠️ Approximate prices.",
+                formwork_comparison: "🔍 Formwork types comparison:\n\n🧱 Wall / Foundation (PIONBOX MINI):\n• For walls, foundations, columns\n• Panels: height 90–150 cm, width 20–90 cm\n• Largest panel weighs only 45 kg\n• 💰 Rental: 6.00 €/m² + VAT / week\n\n📐 Slab Formwork (RINGER, Austria):\n• For ceilings, floor slabs\n• Telescopic props, H20 beams\n• 💰 Rental: 3.00 €/m² + VAT / week\n\n📌 Walls → wall formwork. Ceilings → slab formwork.\n\n⚠️ Approximate prices.",
+                prices_info: "💰 Approximate rental prices:\n\n🔩 Modular scaffolding — 2.20 €/m² + VAT / month\n🔩 Frame scaffolding — 1.40 €/m² + VAT / month\n🧱 Wall formwork (h=1.20 m) — 6.00 €/m² + VAT / week\n📐 Slab formwork — 3.00 €/m² + VAT / week\n\n⚠️ Approximate prices. Final cost from a representative.\n\n💡 Want to calculate cost for your project?",
+                contacts_info: "📞 Contacts:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n🌐 betonaveidni.lv\n\n⏰ Mon–Fri 9:00–18:00\n\n⚠️ Please schedule your visit in advance.\n📌 Contact us by phone or email.",
+                working_hours_info: "⏰ Working Hours:\nMonday — Friday: 9:00 — 18:00\nSaturday — Sunday: closed\n\n⚠️ No permanent staff in the office.\n\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                specialist_redirect: "For a detailed consultation, contact our specialists:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Mon–Fri 9:00–18:00\n⚠️ Please schedule your visit in advance.",
+                ask_estimate_category: "For which equipment would you like to estimate the cost?",
+                ask_area: "📐 Enter the approximate area (in m²):",
+                invalid_area: "❌ Please enter a number (area in m²). Example: 100",
+                ask_rent_or_buy: "What are you interested in?",
+                farewell: "Thank you for contacting SIA «MULTISPA»! 🏗️\nGood luck with your project! 💪\nQuestions? We're always available.",
+                order_redirect: "To prepare an offer, please contact our specialists:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n\n⏰ Mon–Fri 9:00–18:00\n⚠️ Please schedule your visit in advance.",
+                scaffolding_info: "🔩 Scaffolding\n\nWe offer two types:\n\n📌 Frame (Facade) Scaffolding:\n• Simple pipe-in-pipe assembly\n• Rental: 1.40 €/m² + VAT / month\n\n📌 Modular Scaffolding:\n• Wedge-lock connection\n• Fast setup, heavy loads\n• Rental: 2.20 €/m² + VAT / month\n\n⚠️ Approximate prices.",
+                wall_formwork_info: "🧱 Wall / Foundation Formwork — PIONBOX MINI\n\n• Walls, foundations, columns\n• Panels: 90, 120, 150 cm height\n• Largest panel weighs only 45 kg\n\n💰 Rental: 6.00 €/m² + VAT / week\n\n⚠️ Approximate price.",
+                slab_formwork_info: "📐 Slab Formwork — RINGER (Austria)\n\n• Ceilings, floor slabs\n• Telescopic props, H20 beams\n\n💰 Rental: 3.00 €/m² + VAT / week\n\n⚠️ Approximate price.",
+                equipment_list: "🏗️ Our equipment:",
+                estimate_result: "📊 Estimated calculation:\n{name}: {area} m² × {rate} €/m² = {total} € + VAT / {period}\n\n⚠️ Approximate price.\n\n📞 +371 270 66 380 / +371 292 46 838\n📧 siamultispa@gmail.com",
+                greeting_reply: "Hello! 👋 How can I help you?",
+                placeholder: "Enter a message..."
+            }
+        };
+
+        const PRICES = {
+            scaffolding_modular: { rate: 2.20, period: { ru: 'мес.', lv: 'mēn.', en: 'month' }, name: { ru: 'Модульные леса', lv: 'Modulārās sastatnes', en: 'Modular Scaffolding' } },
+            scaffolding_frame: { rate: 1.40, period: { ru: 'мес.', lv: 'mēn.', en: 'month' }, name: { ru: 'Фасадные леса', lv: 'Fasādes sastatnes', en: 'Frame Scaffolding' } },
+            wall_formwork: { rate: 6.00, period: { ru: 'нед.', lv: 'ned.', en: 'week' }, name: { ru: 'Опалубка стен', lv: 'Sienas veidņi', en: 'Wall Formwork' } },
+            slab_formwork: { rate: 3.00, period: { ru: 'нед.', lv: 'ned.', en: 'week' }, name: { ru: 'Опалубка перекрытий', lv: 'Pārseguma veidņi', en: 'Slab Formwork' } },
+        };
+
+        // ─── Определение языка по тексту ───
+        function detectLanguage(text) {
+            if (!text) return null;
+            const lower = text.toLowerCase().trim();
+            if (/[āčēģīķļņšūž]/i.test(lower)) return 'lv';
+            if (/[а-яё]/i.test(lower)) return 'ru';
+            if (/[a-z]/i.test(lower)) return 'en';
+            return null;
+        }
+
+        function t(key) {
+            return (i18n[currentLang] || i18n.ru)[key] || (i18n.ru)[key] || key;
+        }
+
+        // ─── Init ───
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                botSend("🏗️ SIA «MULTISPA» — betonaveidni.lv\n\n🇱🇻 Sveicināti! Es esmu SIA «MULTISPA» virtuālais asistents.\n\n🇷🇺 Здравствуйте! Я виртуальный ассистент SIA «MULTISPA».\n   Мы предлагаем аренду и продажу строительных лесов и опалубки.\n\n🇬🇧 Hello! I am the virtual assistant of SIA «MULTISPA».", [
+                    [{ text: '🇱🇻 Latviešu', data: 'lang_lv' }],
+                    [{ text: '🇷🇺 Русский', data: 'lang_ru' }],
+                    [{ text: '🇬🇧 English', data: 'lang_en' }],
+                ]);
+            }, 600);
+        });
+
+        // ─── Send message ───
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage({ text, role: 'user', timestamp: new Date().toISOString() });
+            input.value = '';
+            input.focus();
+
+            showTyping();
+            setTimeout(() => processText(text), 600 + Math.random() * 600);
+        }
+
+        // ─── Process text input ───
+        function processText(text) {
+            // Автодетекция языка
+            const detected = detectLanguage(text);
+            if (detected) {
+                if (!currentLang) {
+                    currentLang = detected;
+                    document.getElementById('chat-input').placeholder = t('placeholder');
+                } else if (detected !== currentLang) {
+                    currentLang = detected;
+                    document.getElementById('chat-input').placeholder = t('placeholder');
+                }
+            }
+
+            if (dialogState === 'awaiting_area') {
+                handleAreaInput(text);
+                return;
+            }
+
+            const lower = text.toLowerCase();
+
+            // Intent recognition (multilingual)
+            if (/цен|стоимост|сколько.*стоит|прайс|тариф|cen|izmaks|cik\s*maksā|price|cost|how\s*much|tariff|rate/.test(lower)) {
+                handleCallback('prices');
+            } else if (/рассчита|расчёт|расчет|посчита|калькулят|примерн.*стоимост|ориентировочн|aprēķin|kalkulēt|calculat|estimat/.test(lower)) {
+                handleCallback('estimate_price');
+            } else if (/какие.*выбрать|что лучше|посоветуй|подскаж|помоги.*выбрать|подобрать|не знаю|что подходит|ko\s*izvēlēties|kas\s*labāk|ieteikt|which.*choose|what.*better|recommend|help.*choose|not\s*sure/.test(lower)) {
+                handleCallback('consultation');
+            } else if (/разниц|отличи|сравни|чем.*отличает|atšķir|salīdzin|differ|compar|versus|vs\b/.test(lower)) {
+                handleCallback('consultation');
+            } else if (/(оборудован|леса|опалуб|строительн|iekārt|sastatn|veidņ|celtniec|equipment|scaffold|formwork|construction)/.test(lower)) {
+                handleCallback('equipment');
+            } else if (/аренд|сдать|снять|напрокат|nom|īr|rent|lease|hire/.test(lower)) {
+                handleCallback('order');
+            } else if (/купить|покупк|приобрест|pirkt|iegād|buy|purchase/.test(lower)) {
+                handleCallback('order');
+            } else if (/контакт|телефон|позвонить|связ|email|kontakt|tālrun|zvani|sazināt|contact|phone|call|reach/.test(lower)) {
+                handleCallback('contacts');
+            } else if (/время.*работ|график|расписан|часы.*работ|когда.*работ|darba\s*laik|grafik|kad\s*strādā|work.*hour|schedule|opening.*time|when.*open/.test(lower)) {
+                handleCallback('working_hours');
+            } else if (/специалист|менеджер|консультант|speciālist|menedžeri|specialist|manager|consultant/.test(lower)) {
+                handleCallback('specialist');
+            } else if (/привет|здравствуй|добрый|хай|салют|sveiki|labdien|labvakar|hello|hi\b|hey|good\s*(morning|evening|day)/.test(lower)) {
+                botSend(t('greeting_reply'), mainMenuButtons());
+            } else if (/спасибо|благодар|paldies|pateicī|thank/.test(lower)) {
+                botSend(t('farewell'));
+            } else if (/пока|до свидания|прощай|bye|goodbye|atā|uz\s*redzēšanos|ardievu/.test(lower)) {
+                botSend(t('farewell'));
+            } else {
+                botSend(t('main_menu'), mainMenuButtons());
+            }
+        }
+
+        // ─── Handle callback (button clicks) ───
+        function handleCallback(action) {
+            dialogState = 'main_menu';
+
+            switch (action) {
+                case 'lang_lv':
+                case 'lang_en':
+                case 'lang_ru':
+                    currentLang = action.replace('lang_', '');
+                    document.getElementById('chat-input').placeholder = t('placeholder');
+                    botSend(t('lang_selected'));
+                    setTimeout(() => botSend(t('main_menu'), mainMenuButtons()), 300);
+                    break;
+
+                case 'consultation':
+                    botSend(t('consultation_help'), [
+                        [{ text: t('compare_scaffolding'), data: 'compare_scaffolding' }],
+                        [{ text: t('compare_formwork'), data: 'compare_formwork' }],
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('contact_specialist'), data: 'specialist' }],
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'compare_scaffolding':
+                    botSend(t('scaffolding_comparison'), [
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('order'), data: 'order' }],
+                        [{ text: t('back'), data: 'consultation' }],
+                    ]);
+                    break;
+
+                case 'compare_formwork':
+                    botSend(t('formwork_comparison'), [
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('order'), data: 'order' }],
+                        [{ text: t('back'), data: 'consultation' }],
+                    ]);
+                    break;
+
+                case 'equipment':
+                    botSend(t('equipment_list'), [
+                        [{ text: t('scaffolding'), data: 'cat_scaffolding' }],
+                        [{ text: t('wall_formwork'), data: 'cat_wall_formwork' }],
+                        [{ text: t('slab_formwork'), data: 'cat_slab_formwork' }],
+                        [{ text: t('consultation'), data: 'consultation' }],
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'cat_scaffolding':
+                    botSend(t('scaffolding_info'), [
+                        [{ text: t('compare_types'), data: 'compare_scaffolding' }],
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('back'), data: 'equipment' }],
+                    ]);
+                    break;
+
+                case 'cat_wall_formwork':
+                    botSend(t('wall_formwork_info'), [
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('compare_with_slab'), data: 'compare_formwork' }],
+                        [{ text: t('back'), data: 'equipment' }],
+                    ]);
+                    break;
+
+                case 'cat_slab_formwork':
+                    botSend(t('slab_formwork_info'), [
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('compare_with_wall'), data: 'compare_formwork' }],
+                        [{ text: t('back'), data: 'equipment' }],
+                    ]);
+                    break;
+
+                case 'prices':
+                    botSend(t('prices_info'), [
+                        [{ text: t('estimate_price'), data: 'estimate_price' }],
+                        [{ text: t('order'), data: 'order' }],
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'estimate_price':
+                    botSend(t('ask_estimate_category'), [
+                        [{ text: t('modular_scaffolding'), data: 'est_scaffolding_modular' }],
+                        [{ text: t('frame_scaffolding'), data: 'est_scaffolding_frame' }],
+                        [{ text: t('wall_formwork'), data: 'est_wall_formwork' }],
+                        [{ text: t('slab_formwork'), data: 'est_slab_formwork' }],
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'est_scaffolding_modular':
+                case 'est_scaffolding_frame':
+                case 'est_wall_formwork':
+                case 'est_slab_formwork':
+                    sessionData.estimate_category = action.replace('est_', '');
+                    dialogState = 'awaiting_area';
+                    botSend(t('ask_area'));
+                    break;
+
+                case 'order':
+                    botSend(t('ask_rent_or_buy'), [
+                        [{ text: t('rental'), data: 'type_rent' }],
+                        [{ text: t('purchase'), data: 'type_purchase' }],
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'type_rent':
+                case 'type_purchase':
+                    botSend(t('order_redirect'), [
+                        [{ text: t('main_menu_btn'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'contacts':
+                    botSend(t('contacts_info'), [
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'working_hours':
+                    botSend(t('working_hours_info'), [
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'specialist':
+                    botSend(t('specialist_redirect'), [
+                        [{ text: t('back'), data: 'main_menu' }],
+                    ]);
+                    break;
+
+                case 'main_menu':
+                    botSend(t('main_menu'), mainMenuButtons());
+                    break;
+
+                default:
+                    botSend(t('main_menu'), mainMenuButtons());
+            }
+        }
+
+        // ─── Handle area input for estimate ───
+        function handleAreaInput(text) {
+            // Автодетекция языка
+            const detected = detectLanguage(text);
+            if (detected && detected !== currentLang) {
+                currentLang = detected;
+            }
+
+            const areaMatch = text.replace(',', '.').match(/[\d.]+/);
+            if (!areaMatch || isNaN(parseFloat(areaMatch[0])) || parseFloat(areaMatch[0]) <= 0) {
+                botSend(t('invalid_area'));
+                return;
+            }
+
+            const area = parseFloat(areaMatch[0]);
+            const cat = sessionData.estimate_category;
+            const p = PRICES[cat];
+            if (!p) { handleCallback('estimate_price'); return; }
+
+            const total = (area * p.rate).toFixed(2);
+            const lang = currentLang || 'ru';
+            const result = t('estimate_result')
+                .replace('{name}', p.name[lang] || p.name.ru)
+                .replace('{area}', area)
+                .replace('{rate}', p.rate.toFixed(2))
+                .replace('{total}', total)
+                .replace('{period}', p.period[lang] || p.period.ru);
+
+            dialogState = 'main_menu';
+            botSend(result, [
+                [{ text: t('order'), data: 'order' }],
+                [{ text: t('contact_specialist'), data: 'specialist' }],
+                [{ text: t('main_menu_btn'), data: 'main_menu' }],
+            ]);
+        }
+
+        // ─── Main menu buttons ───
+        function mainMenuButtons() {
+            return [
+                [{ text: t('consultation'), data: 'consultation' }],
+                [{ text: t('equipment'), data: 'equipment' }],
+                [{ text: t('prices'), data: 'prices' }],
+                [{ text: t('estimate_price'), data: 'estimate_price' }],
+                [{ text: t('contacts'), data: 'contacts' }],
+                [{ text: t('working_hours'), data: 'working_hours' }],
+            ];
+        }
+
+        // ─── UI helpers ───
+        function botSend(text, buttons) {
+            hideTyping();
+            appendMessage({ text, role: 'bot', timestamp: new Date().toISOString(), buttons });
+            // Озвучить ответ если TTS включён
+            if (ttsEnabled && text) {
+                speakText(text);
+            }
+        }
+
+        function appendMessage(msg) {
+            hideTyping();
+            const container = document.getElementById('chat-messages');
+            const el = document.createElement('div');
+            el.className = `message ${msg.role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = msg.text;
+            el.appendChild(bubble);
+
+            if (msg.buttons && msg.buttons.length) {
+                const btnsEl = document.createElement('div');
+                btnsEl.className = 'message-buttons';
+                msg.buttons.forEach(row => {
+                    const rowEl = document.createElement('div');
+                    rowEl.className = 'btn-row';
+                    row.forEach(btn => {
+                        const b = document.createElement('button');
+                        b.textContent = btn.text;
+                        b.onclick = () => {
+                            b.style.background = 'rgba(37,99,235,0.4)';
+                            b.style.borderColor = '#3b82f6';
+                            btnsEl.querySelectorAll('button').forEach(x => { x.disabled = true; x.style.cursor = 'default'; });
+                            showTyping();
+                            setTimeout(() => handleCallback(btn.data), 400 + Math.random() * 400);
+                        };
+                        rowEl.appendChild(b);
+                    });
+                    btnsEl.appendChild(rowEl);
+                });
+                el.appendChild(btnsEl);
+            }
+
+            if (msg.timestamp) {
+                const timeEl = document.createElement('div');
+                timeEl.className = 'message-time';
+                const t = new Date(msg.timestamp);
+                timeEl.textContent = t.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                el.appendChild(timeEl);
+            }
+
+            container.appendChild(el);
+            requestAnimationFrame(() => { container.scrollTop = container.scrollHeight; });
+        }
+
+        function showTyping() {
+            hideTyping();
+            const container = document.getElementById('chat-messages');
+            const ind = document.createElement('div');
+            ind.className = 'typing-indicator';
+            ind.id = 'typing-ind';
+            for (let i = 0; i < 3; i++) {
+                const d = document.createElement('div');
+                d.className = 'dot';
+                ind.appendChild(d);
+            }
+            container.appendChild(ind);
+            requestAnimationFrame(() => { container.scrollTop = container.scrollHeight; });
+        }
+
+        function hideTyping() {
+            const e = document.getElementById('typing-ind');
+            if (e) e.remove();
+        }
+
+        // ═══════════════════════════════════════
+        // ─── VOICE: TTS (Text-to-Speech) ───
+        // ═══════════════════════════════════════
+        let ttsEnabled = false;
+        const synth = window.speechSynthesis;
+
+        const LANG_CODES_TTS = { ru: 'ru-RU', lv: 'lv-LV', en: 'en-US' };
+
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const btn = document.getElementById('chat-tts-btn');
+            btn.classList.toggle('active', ttsEnabled);
+            btn.title = ttsEnabled
+                ? { ru: 'Озвучивание ВКЛ', lv: 'Skaņa IESLĒGTA', en: 'Sound ON' }[currentLang || 'ru']
+                : { ru: 'Озвучивание ВЫКЛ', lv: 'Skaņa IZSLĒGTA', en: 'Sound OFF' }[currentLang || 'ru'];
+        }
+
+        function speakText(text) {
+            if (!synth) return;
+            synth.cancel(); // остановить предыдущее
+            // Убрать эмодзи для чистого произношения
+            const cleanText = text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}•─═⬅️📊📐🔩🧱🏗🎓💰📞⏰🛒🔄🔍👷✅❌⚠️📌💡📧🌐]/gu, '').trim();
+            if (!cleanText) return;
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = LANG_CODES_TTS[currentLang || 'ru'] || 'ru-RU';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.1;
+            // Подобрать женский голос
+            const voices = synth.getVoices();
+            const langCode = LANG_CODES_TTS[currentLang || 'ru'];
+            const femaleVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]) && /female|woman|anna|zira|svetlana|iveta|ava|samantha/i.test(v.name));
+            const langVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+            if (femaleVoice) utterance.voice = femaleVoice;
+            else if (langVoice) utterance.voice = langVoice;
+
+            synth.speak(utterance);
+        }
+
+        // Загрузить голоса при инициализации
+        if (synth) {
+            synth.getVoices();
+            synth.onvoiceschanged = () => synth.getVoices();
+        }
+
+        // ═══════════════════════════════════════
+        // ─── VOICE: STT (Speech-to-Text) ───
+        // ═══════════════════════════════════════
+        let recognition = null;
+        let isRecording = false;
+        const LANG_CODES_STT = { ru: 'ru-RU', lv: 'lv-LV', en: 'en-US' };
+
+        function initRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn('Speech Recognition не поддерживается в этом браузере');
+                return null;
+            }
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+
+            rec.onresult = (event) => {
+                let final = '';
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        final += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+                const input = document.getElementById('chat-input');
+                if (final) {
+                    input.value = final;
+                    stopRecording();
+                    sendMessage();
+                } else {
+                    input.value = interim;
+                }
+            };
+
+            rec.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopRecording();
+            };
+
+            rec.onend = () => {
+                if (isRecording) stopRecording();
+            };
+
+            return rec;
+        }
+
+        function toggleVoice() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            recognition = initRecognition();
+            if (!recognition) {
+                alert(currentLang === 'lv' ? 'Pārlūks neatbalsta balss ievadi' : currentLang === 'en' ? 'Your browser does not support voice input' : 'Ваш браузер не поддерживает голосовой ввод');
+                return;
+            }
+            recognition.lang = LANG_CODES_STT[currentLang || 'ru'] || 'ru-RU';
+            isRecording = true;
+            const btn = document.getElementById('chat-mic-btn');
+            btn.classList.add('recording');
+            btn.title = { ru: 'Остановить запись', lv: 'Apturēt ierakstu', en: 'Stop recording' }[currentLang || 'ru'];
+
+            // Показать статус
+            const inputArea = document.querySelector('.chat-input-area');
+            let statusEl = document.querySelector('.voice-status');
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.className = 'voice-status';
+                inputArea.parentNode.insertBefore(statusEl, inputArea);
+            }
+            statusEl.textContent = { ru: '🎙️ Говорите...', lv: '🎙️ Runājiet...', en: '🎙️ Speak...' }[currentLang || 'ru'];
+
+            try {
+                recognition.start();
+            } catch (e) {
+                stopRecording();
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            const btn = document.getElementById('chat-mic-btn');
+            btn.classList.remove('recording');
+            btn.title = { ru: 'Голосовой ввод', lv: 'Balss ievade', en: 'Voice input' }[currentLang || 'ru'];
+
+            const statusEl = document.querySelector('.voice-status');
+            if (statusEl) statusEl.remove();
+
+            if (recognition) {
+                try { recognition.stop(); } catch (e) { }
+                recognition = null;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

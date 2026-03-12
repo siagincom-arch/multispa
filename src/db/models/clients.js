@@ -8,12 +8,16 @@ const Clients = {
      */
     async findOrCreate(telegramId, channel = 'telegram') {
         // Try to find existing client
-        const { data: existing } = await supabase
+        const { data: existing, error: findError } = await supabase
             .from('clients')
             .select('*')
             .eq('telegram_id', telegramId)
-            .single();
+            .maybeSingle();
 
+        if (findError) {
+            logger.error('Clients.find error', { error: findError.message, telegramId });
+            return null;
+        }
         if (existing) return existing;
 
         // Create new client

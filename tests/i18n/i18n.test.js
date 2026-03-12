@@ -18,7 +18,7 @@ describe('i18n Module', () => {
     describe('t() — перевод по ключу', () => {
         test('возвращает перевод на русском', () => {
             const result = t('ru', 'main_menu');
-            expect(result).toBe('Главное меню:');
+            expect(result).toContain('Чем могу');
         });
 
         test('возвращает перевод на латышском', () => {
@@ -42,7 +42,7 @@ describe('i18n Module', () => {
 
         test('использует русский по умолчанию для неподдерживаемого языка', () => {
             const result = t('de', 'main_menu');
-            expect(result).toBe('Главное меню:');
+            expect(result).toContain('Чем могу');
         });
 
         test('все основные ключи существуют на русском', () => {
@@ -93,7 +93,7 @@ describe('i18n Module', () => {
             const translations = getTranslations('ru');
             expect(translations).toBeDefined();
             expect(typeof translations).toBe('object');
-            expect(translations.main_menu).toBe('Главное меню:');
+            expect(translations.main_menu).toContain('Чем могу');
         });
 
         test('возвращает все переводы для латышского', () => {

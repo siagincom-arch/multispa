@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIA «MULTISPA» — Веб-виджет</title>
+    <meta name="description" content="Встраиваемый чат-виджет SIA MULTISPA — аренда строительных лесов и опалубки">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{--w-primary:#7c3aed;--w-primary-dark:#6d28d9;--w-primary-light:#a78bfa;--w-accent:#f472b6;--w-accent-glow:rgba(244,114,182,.3);--w-bg:#0f0a1a;--w-bg-card:#1a1228;--w-bg-glass:rgba(15,10,26,.85);--w-text:#f1f0f9;--w-text-sec:#a598c4;--w-border:rgba(255,255,255,.08);--w-border-glow:rgba(124,58,237,.3);--w-shadow:0 25px 60px rgba(0,0,0,.6),0 0 80px rgba(124,58,237,.08)}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#080510;min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--w-text)}
+        .demo-page{text-align:center;padding:40px 20px}
+        .demo-page h1{font-size:clamp(24px,4vw,40px);font-weight:800;margin-bottom:12px}
+        .demo-page h1 .gr{background:linear-gradient(135deg,var(--w-primary-light),var(--w-accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .demo-page p{color:var(--w-text-sec);max-width:500px;margin:0 auto 24px;line-height:1.6}
+        .demo-page code{display:block;background:var(--w-bg-card);border:1px solid var(--w-border);border-radius:12px;padding:16px;text-align:left;font-size:13px;color:var(--w-primary-light);max-width:600px;margin:0 auto;word-break:break-all;white-space:pre-wrap}
+
+        /* ── Tooltip ── */
+        .widget-tooltip{position:fixed;bottom:92px;right:24px;background:var(--w-bg-card);border:1px solid var(--w-border-glow);border-radius:14px;padding:10px 16px;font-size:13px;color:var(--w-text);box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9997;opacity:0;transform:translateY(8px) scale(.95);transition:all .4s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap}
+        .widget-tooltip.show{opacity:1;transform:translateY(0) scale(1)}
+        .widget-tooltip::after{content:'';position:absolute;bottom:-6px;right:28px;width:12px;height:12px;background:var(--w-bg-card);border-right:1px solid var(--w-border-glow);border-bottom:1px solid var(--w-border-glow);transform:rotate(45deg)}
+
+        /* ── Toggle Button ── */
+        .widget-toggle{position:fixed;bottom:24px;right:24px;width:62px;height:62px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--w-primary),var(--w-accent));color:#fff;cursor:pointer;box-shadow:0 8px 32px rgba(124,58,237,.4),0 0 0 0 rgba(124,58,237,.4);transition:all .4s cubic-bezier(.4,0,.2,1);z-index:9999;display:flex;align-items:center;justify-content:center;animation:togglePulse 3s ease-in-out infinite}
+        .widget-toggle:hover{transform:scale(1.12);box-shadow:0 12px 40px rgba(124,58,237,.55)}
+        .widget-toggle.open{background:linear-gradient(135deg,#ef4444,#f97316);animation:none;transform:rotate(0)}
+        .widget-toggle svg{width:28px;height:28px;transition:transform .3s}
+        .widget-toggle.open .icon-chat{transform:scale(0);position:absolute}
+        .widget-toggle.open .icon-close{transform:scale(1)}
+        .widget-toggle:not(.open) .icon-close{transform:scale(0);position:absolute}
+        @keyframes togglePulse{0%,100%{box-shadow:0 8px 32px rgba(124,58,237,.4),0 0 0 0 rgba(124,58,237,.3)}50%{box-shadow:0 8px 32px rgba(124,58,237,.4),0 0 0 12px rgba(124,58,237,0)}}
+
+        /* ── Badge ── */
+        .widget-badge{position:absolute;top:-2px;right:-2px;width:20px;height:20px;background:#ef4444;border-radius:50%;border:2px solid #080510;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;animation:badgePop .4s cubic-bezier(.4,0,.2,1)}
+        .widget-badge.hide{display:none}
+        @keyframes badgePop{from{transform:scale(0)}to{transform:scale(1)}}
+
+        /* ── Chat Window ── */
+        .widget-chat{position:fixed;bottom:96px;right:24px;width:400px;max-width:calc(100vw - 32px);height:580px;max-height:calc(100vh - 120px);background:var(--w-bg-glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:24px;border:1px solid var(--w-border-glow);box-shadow:var(--w-shadow);display:flex;flex-direction:column;overflow:hidden;z-index:9998;opacity:0;transform:translateY(20px) scale(.96);pointer-events:none;transition:opacity .35s cubic-bezier(.4,0,.2,1),transform .35s cubic-bezier(.4,0,.2,1)}
+        .widget-chat.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:all}
+
+        /* ── Header ── */
+        .wc-header{background:linear-gradient(135deg,rgba(109,40,217,.6),rgba(26,18,40,.8));padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--w-border);backdrop-filter:blur(10px)}
+        .wc-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;padding:2px;background:linear-gradient(135deg,var(--w-primary-light),var(--w-accent))}
+        .wc-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+        .wc-title{font-weight:700;font-size:15px;letter-spacing:-.3px}
+        .wc-status{color:#4ade80;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px}
+        .wc-status::before{content:'';width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:statusPulse 2s ease-in-out infinite}
+        @keyframes statusPulse{0%,100%{box-shadow:0 0 4px #4ade80}50%{box-shadow:0 0 12px #4ade80,0 0 24px rgba(74,222,128,.3)}}
+        .wc-header-actions{margin-left:auto;display:flex;gap:4px}
+        .wc-header-actions button{background:none;border:none;color:var(--w-text-sec);cursor:pointer;padding:6px;border-radius:8px;transition:all .2s;display:flex;align-items:center;justify-content:center}
+        .wc-header-actions button:hover{background:rgba(255,255,255,.08);color:var(--w-text)}
+
+        /* ── Messages ── */
+        .wc-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+        .wc-messages::-webkit-scrollbar{width:4px}
+        .wc-messages::-webkit-scrollbar-track{background:transparent}
+        .wc-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+        .wc-msg{max-width:88%;animation:msgSlide .35s cubic-bezier(.4,0,.2,1)}
+        @keyframes msgSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .wc-msg.bot{align-self:flex-start}
+        .wc-msg.user{align-self:flex-end}
+        .wc-bubble{padding:12px 16px;border-radius:20px;font-size:14px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
+        .wc-msg.bot .wc-bubble{background:rgba(26,18,40,.7);border:1px solid var(--w-border);border-bottom-left-radius:6px;backdrop-filter:blur(6px)}
+        .wc-msg.user .wc-bubble{background:linear-gradient(135deg,var(--w-primary),var(--w-primary-light));color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 16px rgba(124,58,237,.3)}
+        .wc-time{font-size:11px;color:var(--w-text-sec);margin-top:4px;padding:0 4px;opacity:.7}
+        .wc-msg.user .wc-time{text-align:right}
+
+        /* ── Buttons ── */
+        .wc-btns{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+        .wc-btns .btn-row{display:flex;gap:5px}
+        .wc-btns button{flex:1;padding:10px 14px;background:rgba(124,58,237,.1);color:var(--w-primary-light);border:1px solid rgba(124,58,237,.2);border-radius:12px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+        .wc-btns button::before{content:'';position:absolute;inset:0;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(244,114,182,.1));opacity:0;transition:opacity .25s}
+        .wc-btns button:hover{border-color:var(--w-primary);transform:translateY(-2px);box-shadow:0 4px 16px rgba(124,58,237,.2)}
+        .wc-btns button:hover::before{opacity:1}
+        .wc-btns button:active{transform:translateY(0)}
+        .wc-btns button:disabled{opacity:.35;cursor:default;transform:none!important;box-shadow:none!important}
+
+        /* ── Typing ── */
+        .wc-typing{display:flex;gap:5px;padding:14px 18px;align-self:flex-start;background:rgba(26,18,40,.7);border-radius:20px;border-bottom-left-radius:6px;border:1px solid var(--w-border);animation:msgSlide .3s ease}
+        .wc-typing .dot{width:8px;height:8px;background:var(--w-primary-light);border-radius:50%;animation:typeBounce 1.4s infinite}
+        .wc-typing .dot:nth-child(2){animation-delay:.15s}
+        .wc-typing .dot:nth-child(3){animation-delay:.3s}
+        @keyframes typeBounce{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-6px)}}
+
+        /* ── Input ── */
+        .wc-input-area{padding:12px 14px;display:flex;gap:8px;border-top:1px solid var(--w-border);background:rgba(15,10,26,.7);backdrop-filter:blur(10px)}
+        .wc-input{flex:1;padding:12px 16px;background:rgba(26,18,40,.6);border:1px solid var(--w-border);border-radius:14px;color:var(--w-text);font-family:inherit;font-size:14px;outline:none;transition:all .25s}
+        .wc-input::placeholder{color:var(--w-text-sec)}
+        .wc-input:focus{border-color:var(--w-primary);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+        .wc-send{width:46px;height:46px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--w-primary),var(--w-primary-light));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0}
+        .wc-send:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(124,58,237,.45)}
+        .wc-icon-btn{background:none;border:none;color:var(--w-text-sec);cursor:pointer;padding:8px;border-radius:50%;transition:all .3s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .wc-icon-btn:hover{color:var(--w-accent);background:rgba(244,114,182,.1)}
+        .wc-icon-btn.recording{color:#ef4444;background:rgba(239,68,68,.15);animation:pulseMic 1.5s ease-in-out infinite}
+        .wc-icon-btn.tts-on{color:var(--w-accent);background:rgba(244,114,182,.15)}
+        @keyframes pulseMic{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+
+        /* ── Voice Viz ── */
+        .wc-voice-vis{display:none;padding:8px 16px;border-top:1px solid var(--w-border);background:rgba(15,10,26,.5)}
+        .wc-voice-vis.active{display:flex;align-items:center;justify-content:center;gap:2px}
+        .wc-voice-vis .bar{width:3px;border-radius:3px;background:linear-gradient(to top,var(--w-primary),var(--w-accent));transition:height .1s ease}
+
+        /* ── Calculator ── */
+        .wc-calc{background:rgba(26,18,40,.85);border:1px solid var(--w-border-glow);border-radius:16px;padding:14px;margin-top:8px;backdrop-filter:blur(8px)}
+        .wc-calc-title{font-size:13px;font-weight:700;color:var(--w-primary-light);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+        .wc-calc-row{display:flex;gap:6px;margin-bottom:8px;align-items:flex-end}
+        .wc-calc-field{flex:1;display:flex;flex-direction:column;gap:3px}
+        .wc-calc-field label{font-size:11px;color:var(--w-text-sec);font-weight:500}
+        .wc-calc-field input{width:100%;padding:8px 10px;background:rgba(15,10,26,.7);border:1px solid var(--w-border);border-radius:10px;color:var(--w-text);font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
+        .wc-calc-field input:focus{border-color:var(--w-primary)}
+        .wc-calc-field input::placeholder{color:var(--w-text-sec);opacity:.5}
+        .wc-calc-add{padding:8px 12px;background:rgba(124,58,237,.15);color:var(--w-primary-light);border:1px solid rgba(124,58,237,.25);border-radius:10px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+        .wc-calc-add:hover{background:rgba(124,58,237,.3);border-color:var(--w-primary);transform:translateY(-1px)}
+        .wc-calc-list{margin:8px 0;max-height:120px;overflow-y:auto}
+        .wc-calc-list::-webkit-scrollbar{width:3px}
+        .wc-calc-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+        .wc-calc-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(15,10,26,.5);border-radius:8px;margin-bottom:4px;font-size:12px;color:var(--w-text);animation:msgSlide .25s ease}
+        .wc-calc-item .calc-label{color:var(--w-text-sec);flex:1}
+        .wc-calc-item .calc-value{font-weight:600;color:var(--w-primary-light);margin:0 8px}
+        .wc-calc-item .calc-del{background:none;border:none;color:rgba(239,68,68,.6);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:all .2s;line-height:1}
+        .wc-calc-item .calc-del:hover{color:#ef4444;background:rgba(239,68,68,.15)}
+        .wc-calc-total{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(244,114,182,.08));border:1px solid rgba(124,58,237,.2);border-radius:10px;margin:8px 0;font-size:13px}
+        .wc-calc-total .total-label{color:var(--w-text-sec);font-weight:500}
+        .wc-calc-total .total-value{font-weight:700;color:#4ade80;font-size:15px}
+        .wc-calc-submit{width:100%;padding:10px;background:linear-gradient(135deg,var(--w-primary),var(--w-primary-light));color:#fff;border:none;border-radius:12px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;margin-top:4px}
+        .wc-calc-submit:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(124,58,237,.4)}
+        .wc-calc-submit:disabled{opacity:.4;cursor:default;transform:none!important;box-shadow:none!important}
+        .wc-calc-hint{font-size:11px;color:var(--w-text-sec);margin-top:6px;text-align:center;opacity:.7}
+
+        /* ── Footer ── */
+        .wc-footer{padding:8px;text-align:center;border-top:1px solid var(--w-border);background:rgba(15,10,26,.5)}
+        .wc-footer a{color:var(--w-text-sec);font-size:11px;text-decoration:none;transition:color .2s}
+        .wc-footer a:hover{color:var(--w-primary-light)}
+
+        @media(max-width:480px){
+            .widget-chat{bottom:0;right:0;width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0}
+            .widget-chat.visible{transform:translateY(0) scale(1)}
+            .widget-toggle{bottom:16px;right:16px}
+            .widget-tooltip{display:none!important}
+        }
+    </style>
+</head>
+<body>
+
+    <div class="demo-page">
+        <h1>Виджет <span class="gr">SIA «MULTISPA»</span></h1>
+        <p>Встраиваемый чат-виджет для сайта betonaveidni.lv. Нажмите кнопку в правом нижнем углу, чтобы открыть чат с ботом Анной.</p>
+        <code>&lt;script src="https://your-domain.com/widget.js"&gt;&lt;/script&gt;</code>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="widget-tooltip" id="widgetTooltip">💬 Нужна помощь? Спросите Анну!</div>
+
+    <!-- Toggle -->
+    <button class="widget-toggle" id="widgetToggle" onclick="toggleWidget()">
+        <svg class="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <span class="widget-badge" id="widgetBadge">1</span>
+    </button>
+
+    <!-- Chat Window -->
+    <div class="widget-chat" id="widgetChat">
+        <div class="wc-header">
+            <div class="wc-avatar"><img src="anna_avatar.png" alt="Anna"></div>
+            <div>
+                <div class="wc-title">Анна • SIA «MULTISPA»</div>
+                <div class="wc-status">Онлайн</div>
+            </div>
+            <div class="wc-header-actions">
+                <button onclick="resetChat()" title="Начать заново"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></button>
+            </div>
+        </div>
+        <div class="wc-messages" id="wcMessages"></div>
+        <div class="wc-voice-vis" id="voiceVis"></div>
+        <div class="wc-input-area">
+            <input type="text" id="wcInput" class="wc-input" placeholder="Введите сообщение..." autocomplete="off" onkeydown="if(event.key==='Enter')wSend()">
+            <button class="wc-icon-btn" id="wcMic" onclick="wToggleVoice()" title="Голосовой ввод">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            <button class="wc-icon-btn" id="wcTts" onclick="wToggleTTS()" title="Озвучка ответов">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+            <button class="wc-send" onclick="wSend()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+        <div class="wc-footer"><a href="https://betonaveidni.lv" target="_blank">betonaveidni.lv — SIA «MULTISPA»</a></div>
+    </div>
+
+    <script>
+        // ═══ WIDGET v2: SIA MULTISPA Premium Chat Bot ═══
+        let wLang=null,wState='welcome',wSession={},wOpen=false,wTtsOn=false;
+
+        // ── Tooltip ──
+        setTimeout(()=>{if(!wOpen){const t=document.getElementById('widgetTooltip');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000)}},3000);
+
+        // ── i18n ──
+        const W_I18N={
+            ru:{lang_selected:"Русский язык выбран ✅",main_menu:"Чем могу помочь? Выберите раздел или задайте вопрос:",consultation:"🎓 Помощь в выборе",equipment:"🏗️ Оборудование",prices:"💰 Цены аренды",estimate_price:"📊 Рассчитать стоимость",order:"🛒 Заказать",contacts:"📞 Контакты",working_hours:"⏰ Время работы",back:"⬅️ Назад",main_menu_btn:"⬅️ Главное меню",scaffolding:"🔩 Строительные леса",wall_formwork:"🧱 Опалубка стен",slab_formwork:"📐 Опалубка перекрытий",contact_specialist:"👷 Связаться со специалистом",compare_scaffolding:"🔍 Сравнить леса",compare_formwork:"🔍 Сравнить опалубку",modular_scaffolding:"Модульные леса",frame_scaffolding:"Фасадные леса",rental:"🔄 Аренда",purchase:"🛒 Покупка",compare_types:"🔍 Сравнить типы",compare_with_slab:"🔍 Сравнить с опалубкой перекрытий",compare_with_wall:"🔍 Сравнить с опалубкой стен",help_choose:"🎓 Помощь в выборе",
+                consultation_help:"🎓 Помогу разобраться!\n\nМы предлагаем:\n\n🔩 Строительные леса — фасады, отделка\n   • Рамные — простые и экономичные\n   • Модульные — для сложных объектов\n\n🧱 Стеновая опалубка (PIONBOX MINI)\n📐 Опалубка перекрытий (RINGER)\n\n💡 Опишите задачу — подскажу!",
+                scaffolding_comparison:"🔍 Сравнение лесов:\n\n🔩 Рамные: 1,40 €/м²+ПВН/мес.\n• «Труба в трубу», простой монтаж\n\n🔩 Модульные: 2,20 €/м²+ПВН/мес.\n• Клиновое крепление, тяжёлые нагрузки\n\n⚠️ Ориентировочные цены.",
+                formwork_comparison:"🔍 Сравнение опалубки:\n\n🧱 Стеновая (PIONBOX MINI): 6,00 €/м²+ПВН/нед.\n• Стены, фундаменты, колонны\n\n📐 Перекрытий (RINGER): 3,00 €/м²+ПВН/нед.\n• Потолки, перекрытия\n\n⚠️ Ориентировочные цены.",
+                prices_info:"💰 Цены аренды:\n\n🔩 Модульные леса — 2,20 €/м²+ПВН/мес.\n🔩 Фасадные леса — 1,40 €/м²+ПВН/мес.\n🧱 Опалубка стен — 6,00 €/м²+ПВН/нед.\n📐 Опалубка перекрытий — 3,00 €/м²+ПВН/нед.\n\n⚠️ Ориентировочные цены.",
+                contacts_info:"📞 Контакты:\n\n📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n🌐 betonaveidni.lv\n\n⏰ Пн–Пт 9:00–18:00\n⚠️ Согласуйте визит заранее.",
+                working_hours_info:"⏰ Пн–Пт: 9:00–18:00\nСб–Вс: выходной\n\n⚠️ Согласуйте визит заранее.\n📞 +371 270 66 380",
+                specialist_redirect:"📞 +371 270 66 380\n📞 +371 292 46 838\n📧 siamultispa@gmail.com\n⏰ Пн–Пт 9:00–18:00",
+                ask_estimate_category:"Для какого оборудования рассчитать?",ask_area:"📐 Укажите площадь (м²):",invalid_area:"❌ Введите число. Пример: 100",
+                ask_rent_or_buy:"Аренда или покупка?",farewell:"Спасибо! 🏗️ Удачи! 💪",
+                calc_title_scaffolding:"📐 Калькулятор лесов",calc_title_slab:"📐 Калькулятор перекрытий",calc_title_wall:"📐 Калькулятор стеновой опалубки",
+                calc_length:"Длина (м)",calc_height:"Высота (м)",calc_width:"Ширина (м)",calc_wall_length:"Длина стены (м)",
+                calc_add_wall:"+ Стена",calc_add_room:"+ Помещение",calc_add_wall_seg:"+ Стена",
+                calc_wall_n:"Стена",calc_room_n:"Помещение",
+                calc_total:"Итого площадь:",calc_submit:"📊 Рассчитать стоимость",calc_hint_scaffolding:"Добавьте стены для расчёта",calc_hint_slab:"Добавьте помещения для расчёта",calc_hint_wall:"Периметр × 2 × 1.2",calc_m2:"м²",calc_m:"м",calc_perimeter:"Периметр:",
+                order_redirect:"📞 +371 270 66 380\n📧 siamultispa@gmail.com\n⏰ Пн–Пт 9:00–18:00",
+                scaffolding_info:"🔩 Леса:\n\n📌 Рамные: 1,40 €/м²+ПВН/мес.\n📌 Модульные: 2,20 €/м²+ПВН/мес.\n\n⚠️ Ориентировочные цены.",
+                wall_formwork_info:"🧱 PIONBOX MINI\n• Стены, фундаменты\n💰 6,00 €/м²+ПВН/нед.",
+                slab_formwork_info:"📐 RINGER (Австрия)\n• Потолки, перекрытия\n💰 3,00 €/м²+ПВН/нед.",
+                equipment_list:"🏗️ Наше оборудование:",
+                estimate_result:"📊 Расчёт:\n{name}: {area} м² × {rate} €/м² = {total} € + ПВН / {period}\n\n📞 +371 270 66 380",
+                greeting_reply:"Здравствуйте! 👋 Чем помочь?",placeholder:"Введите сообщение..."
+            },
+            lv:{lang_selected:"Latviešu valoda izvēlēta ✅",main_menu:"Kā varu palīdzēt?",consultation:"🎓 Palīdzība izvēlē",equipment:"🏗️ Iekārtas",prices:"💰 Nomas cenas",estimate_price:"📊 Aprēķināt cenu",order:"🛒 Pasūtīt",contacts:"📞 Kontakti",working_hours:"⏰ Darba laiks",back:"⬅️ Atpakaļ",main_menu_btn:"⬅️ Galvenā izvēlne",scaffolding:"🔩 Sastatnes",wall_formwork:"🧱 Sienas veidņi",slab_formwork:"📐 Pārseguma veidņi",contact_specialist:"👷 Sazināties",compare_scaffolding:"🔍 Salīdzināt sastatnes",compare_formwork:"🔍 Salīdzināt veidņus",modular_scaffolding:"Modulārās",frame_scaffolding:"Fasādes",rental:"🔄 Noma",purchase:"🛒 Iegāde",compare_types:"🔍 Salīdzināt",compare_with_slab:"🔍 Salīdzināt ar pārseguma",compare_with_wall:"🔍 Salīdzināt ar sienas",help_choose:"🎓 Palīdzība",
+                consultation_help:"🎓 Palīdzēšu!\n\n🔩 Sastatnes — fasādes darbi\n🧱 Sienas veidņi (PIONBOX MINI)\n📐 Pārseguma veidņi (RINGER)",
+                scaffolding_comparison:"🔍 Rāmja: 1,40 €/m²+PVN/mēn.\nModulārās: 2,20 €/m²+PVN/mēn.\n⚠️ Orientējošās cenas.",
+                formwork_comparison:"🔍 Sienas: 6,00 €/m²+PVN/ned.\nPārseguma: 3,00 €/m²+PVN/ned.\n⚠️ Orientējošās cenas.",
+                prices_info:"💰 Nomas cenas:\n🔩 Modulārās — 2,20 €/m²/mēn.\n🔩 Fasādes — 1,40 €/m²/mēn.\n🧱 Sienas — 6,00 €/m²/ned.\n📐 Pārseguma — 3,00 €/m²/ned.",
+                contacts_info:"📞 +371 270 66 380\n📧 siamultispa@gmail.com\n⏰ Pirmdiena–Piektdiena 9:00–18:00",
+                working_hours_info:"⏰ Pirmdiena–Piektdiena 9:00–18:00\n📞 +371 270 66 380",
+                specialist_redirect:"📞 +371 270 66 380\n📧 siamultispa@gmail.com",
+                ask_estimate_category:"Kuram aprīkojumam?",ask_area:"📐 Platību (m²):",invalid_area:"❌ Ievadiet skaitli.",
+                ask_rent_or_buy:"Noma vai iegāde?",farewell:"Paldies! 🏗️💪",order_redirect:"📞 +371 270 66 380",
+                calc_title_scaffolding:"📐 Sastatņu kalkulators",calc_title_slab:"📐 Pārseguma kalkulators",calc_title_wall:"📐 Sienas veidņu kalkulators",
+                calc_length:"Garums (m)",calc_height:"Augstums (m)",calc_width:"Platums (m)",calc_wall_length:"Sienas garums (m)",
+                calc_add_wall:"+ Siena",calc_add_room:"+ Telpa",calc_add_wall_seg:"+ Siena",
+                calc_wall_n:"Siena",calc_room_n:"Telpa",
+                calc_total:"Kopā platība:",calc_submit:"📊 Aprēķināt cenu",calc_hint_scaffolding:"Pievienojiet sienas",calc_hint_slab:"Pievienojiet telpas",calc_hint_wall:"Perimetrs × 2 × 1.2",calc_m2:"m²",calc_m:"m",calc_perimeter:"Perimetrs:",
+                scaffolding_info:"🔩 Rāmja: 1,40 €/m²\nModulārās: 2,20 €/m²",wall_formwork_info:"🧱 PIONBOX MINI\n💰 6,00 €/m²/ned.",slab_formwork_info:"📐 RINGER\n💰 3,00 €/m²/ned.",equipment_list:"🏗️ Iekārtas:",
+                estimate_result:"📊 {name}: {area} m² × {rate} €/m² = {total} € + PVN / {period}\n📞 +371 270 66 380",
+                greeting_reply:"Sveicināti! 👋",placeholder:"Ievadiet ziņojumu..."
+            },
+            en:{lang_selected:"English selected ✅",main_menu:"How can I help?",consultation:"🎓 Help me choose",equipment:"🏗️ Equipment",prices:"💰 Prices",estimate_price:"📊 Calculate cost",order:"🛒 Order",contacts:"📞 Contacts",working_hours:"⏰ Hours",back:"⬅️ Back",main_menu_btn:"⬅️ Main menu",scaffolding:"🔩 Scaffolding",wall_formwork:"🧱 Wall Formwork",slab_formwork:"📐 Slab Formwork",contact_specialist:"👷 Contact specialist",compare_scaffolding:"🔍 Compare scaffolding",compare_formwork:"🔍 Compare formwork",modular_scaffolding:"Modular",frame_scaffolding:"Frame",rental:"🔄 Rental",purchase:"🛒 Purchase",compare_types:"🔍 Compare",compare_with_slab:"🔍 Compare with slab",compare_with_wall:"🔍 Compare with wall",help_choose:"🎓 Help choose",
+                consultation_help:"🎓 We offer:\n\n🔩 Scaffolding — facades, finishing\n🧱 Wall formwork (PIONBOX MINI)\n📐 Slab formwork (RINGER)",
+                scaffolding_comparison:"🔍 Frame: 1.40 €/m²+VAT/month\nModular: 2.20 €/m²+VAT/month\n⚠️ Approximate.",
+                formwork_comparison:"🔍 Wall: 6.00 €/m²+VAT/week\nSlab: 3.00 €/m²+VAT/week\n⚠️ Approximate.",
+                prices_info:"💰 Prices:\n🔩 Modular — 2.20 €/m²/month\n🔩 Frame — 1.40 €/m²/month\n🧱 Wall — 6.00 €/m²/week\n📐 Slab — 3.00 €/m²/week",
+                contacts_info:"📞 +371 270 66 380\n📧 siamultispa@gmail.com\n⏰ Mon–Fri 9:00–18:00",
+                working_hours_info:"⏰ Mon–Fri 9:00–18:00\n📞 +371 270 66 380",
+                specialist_redirect:"📞 +371 270 66 380\n📧 siamultispa@gmail.com",
+                ask_estimate_category:"For which equipment?",ask_area:"📐 Area (m²):",invalid_area:"❌ Enter a number.",
+                ask_rent_or_buy:"Rental or purchase?",farewell:"Thank you! 🏗️💪",order_redirect:"📞 +371 270 66 380",
+                calc_title_scaffolding:"📐 Scaffolding Calculator",calc_title_slab:"📐 Slab Formwork Calculator",calc_title_wall:"📐 Wall Formwork Calculator",
+                calc_length:"Length (m)",calc_height:"Height (m)",calc_width:"Width (m)",calc_wall_length:"Wall length (m)",
+                calc_add_wall:"+ Wall",calc_add_room:"+ Room",calc_add_wall_seg:"+ Wall",
+                calc_wall_n:"Wall",calc_room_n:"Room",
+                calc_total:"Total area:",calc_submit:"📊 Calculate cost",calc_hint_scaffolding:"Add walls to calculate",calc_hint_slab:"Add rooms to calculate",calc_hint_wall:"Perimeter × 2 × 1.2",calc_m2:"m²",calc_m:"m",calc_perimeter:"Perimeter:",
+                scaffolding_info:"🔩 Frame: 1.40 €/m²\nModular: 2.20 €/m²",wall_formwork_info:"🧱 PIONBOX MINI\n💰 6.00 €/m²/week",slab_formwork_info:"📐 RINGER\n💰 3.00 €/m²/week",equipment_list:"🏗️ Equipment:",
+                estimate_result:"📊 {name}: {area} m² × {rate} €/m² = {total} € + VAT / {period}\n📞 +371 270 66 380",
+                greeting_reply:"Hello! 👋",placeholder:"Enter a message..."
+            }
+        };
+
+        const W_PRICES={scaffolding_modular:{rate:2.20,period:{ru:'мес.',lv:'mēn.',en:'month'},name:{ru:'Модульные леса',lv:'Modulārās',en:'Modular'}},scaffolding_frame:{rate:1.40,period:{ru:'мес.',lv:'mēn.',en:'month'},name:{ru:'Фасадные леса',lv:'Fasādes',en:'Frame'}},wall_formwork:{rate:6.00,period:{ru:'нед.',lv:'ned.',en:'week'},name:{ru:'Опалубка стен',lv:'Sienas veidņi',en:'Wall Formwork'}},slab_formwork:{rate:3.00,period:{ru:'нед.',lv:'ned.',en:'week'},name:{ru:'Опалубка перекрытий',lv:'Pārseguma veidņi',en:'Slab Formwork'}}};
+
+        function wt(k){return(W_I18N[wLang]||W_I18N.ru)[k]||(W_I18N.ru)[k]||k}
+        function detectLang(t){if(!t)return null;const l=t.toLowerCase();if(/[āčēģīķļņšūž]/i.test(l))return'lv';if(/[а-яё]/i.test(l))return'ru';if(/[a-z]/i.test(l))return'en';return null}
+
+        function toggleWidget(){
+            wOpen=!wOpen;
+            document.getElementById('widgetChat').classList.toggle('visible',wOpen);
+            document.getElementById('widgetToggle').classList.toggle('open',wOpen);
+            document.getElementById('widgetTooltip').classList.remove('show');
+            const badge=document.getElementById('widgetBadge');
+            if(wOpen)badge.classList.add('hide');
+            if(wOpen&&!document.getElementById('wcMessages').children.length){
+                setTimeout(()=>wBot("🏗️ SIA «MULTISPA» — betonaveidni.lv\n\n🇱🇻 Sveicināti!\n🇷🇺 Здравствуйте!\n🇬🇧 Hello!",[[{text:'🇱🇻 Latviešu',data:'lang_lv'}],[{text:'🇷🇺 Русский',data:'lang_ru'}],[{text:'🇬🇧 English',data:'lang_en'}]]),400);
+            }
+        }
+
+        function resetChat(){
+            wLang=null;wState='welcome';wSession={};
+            document.getElementById('wcMessages').innerHTML='';
+            document.getElementById('wcInput').placeholder='Введите сообщение...';
+            setTimeout(()=>wBot("🏗️ SIA «MULTISPA» — betonaveidni.lv\n\n🇱🇻 Sveicināti!\n🇷🇺 Здравствуйте!\n🇬🇧 Hello!",[[{text:'🇱🇻 Latviešu',data:'lang_lv'}],[{text:'🇷🇺 Русский',data:'lang_ru'}],[{text:'🇬🇧 English',data:'lang_en'}]]),300);
+        }
+
+        function wSend(){
+            const inp=document.getElementById('wcInput');const txt=inp.value.trim();if(!txt)return;
+            wAppend({text:txt,role:'user'});inp.value='';inp.focus();
+            wShowTyping();setTimeout(()=>wProcess(txt),500+Math.random()*500);
+        }
+
+        function wProcess(text){
+            const det=detectLang(text);if(det){wLang=wLang||det;if(det!==wLang)wLang=det;document.getElementById('wcInput').placeholder=wt('placeholder')}
+            if(wState==='awaiting_area'){wHandleArea(text);return}
+            const l=text.toLowerCase();
+            if(/цен|стоимост|cen|price|cost/.test(l))wCb('prices');
+            else if(/рассчита|расчёт|aprēķin|calculat|estimat/.test(l))wCb('estimate_price');
+            else if(/выбрать|посоветуй|помоги|izvēlēties|ieteikt|choose|recommend/.test(l))wCb('consultation');
+            else if(/сравни|отличи|salīdzin|compar/.test(l))wCb('consultation');
+            else if(/оборудован|леса|опалуб|iekārt|sastatn|veidņ|equipment|scaffold|formwork/.test(l))wCb('equipment');
+            else if(/аренд|nom|rent|купить|pirkt|buy/.test(l))wCb('order');
+            else if(/контакт|телефон|связ|kontakt|tālrun|contact|phone/.test(l))wCb('contacts');
+            else if(/время.*работ|график|darba\s*laik|work.*hour|schedule/.test(l))wCb('working_hours');
+            else if(/специалист|менеджер|speciālist|specialist/.test(l))wCb('specialist');
+            else if(/привет|здравствуй|sveiki|labdien|hello|hi\b|hey/.test(l))wBot(wt('greeting_reply'),wMainBtns());
+            else if(/спасибо|paldies|thank/.test(l))wBot(wt('farewell'));
+            else if(/пока|до свидания|bye|atā/.test(l))wBot(wt('farewell'));
+            else wBot(wt('main_menu'),wMainBtns());
+        }
+
+        function wCb(a){
+            wState='main_menu';const c=(k,d)=>({text:wt(k),data:d});
+            switch(a){
+                case'lang_lv':case'lang_en':case'lang_ru':wLang=a.replace('lang_','');document.getElementById('wcInput').placeholder=wt('placeholder');wBot(wt('lang_selected'));setTimeout(()=>wBot(wt('main_menu'),wMainBtns()),300);break;
+                case'consultation':wBot(wt('consultation_help'),[[c('compare_scaffolding','compare_scaffolding')],[c('compare_formwork','compare_formwork')],[c('estimate_price','estimate_price')],[c('contact_specialist','specialist')],[c('back','main_menu')]]);break;
+                case'compare_scaffolding':wBot(wt('scaffolding_comparison'),[[c('estimate_price','estimate_price')],[c('order','order')],[c('back','consultation')]]);break;
+                case'compare_formwork':wBot(wt('formwork_comparison'),[[c('estimate_price','estimate_price')],[c('order','order')],[c('back','consultation')]]);break;
+                case'equipment':wBot(wt('equipment_list'),[[c('scaffolding','cat_scaffolding')],[c('wall_formwork','cat_wall_formwork')],[c('slab_formwork','cat_slab_formwork')],[c('back','main_menu')]]);break;
+                case'cat_scaffolding':wBot(wt('scaffolding_info'),[[c('compare_types','compare_scaffolding')],[c('estimate_price','estimate_price')],[c('back','equipment')]]);break;
+                case'cat_wall_formwork':wBot(wt('wall_formwork_info'),[[c('estimate_price','estimate_price')],[c('compare_with_slab','compare_formwork')],[c('back','equipment')]]);break;
+                case'cat_slab_formwork':wBot(wt('slab_formwork_info'),[[c('estimate_price','estimate_price')],[c('compare_with_wall','compare_formwork')],[c('back','equipment')]]);break;
+                case'prices':wBot(wt('prices_info'),[[c('estimate_price','estimate_price')],[c('order','order')],[c('back','main_menu')]]);break;
+                case'estimate_price':wBot(wt('ask_estimate_category'),[[{text:wt('modular_scaffolding'),data:'est_scaffolding_modular'}],[{text:wt('frame_scaffolding'),data:'est_scaffolding_frame'}],[{text:wt('wall_formwork'),data:'est_wall_formwork'}],[{text:wt('slab_formwork'),data:'est_slab_formwork'}],[c('back','main_menu')]]);break;
+                case'est_scaffolding_modular':case'est_scaffolding_frame':case'est_wall_formwork':case'est_slab_formwork':wSession.cat=a.replace('est_','');wShowCalc(wSession.cat);break;
+                case'order':wBot(wt('ask_rent_or_buy'),[[c('rental','type_rent')],[c('purchase','type_purchase')],[c('back','main_menu')]]);break;
+                case'type_rent':case'type_purchase':wBot(wt('order_redirect'),[[c('main_menu_btn','main_menu')]]);break;
+                case'contacts':wBot(wt('contacts_info'),[[c('back','main_menu')]]);break;
+                case'working_hours':wBot(wt('working_hours_info'),[[c('back','main_menu')]]);break;
+                case'specialist':wBot(wt('specialist_redirect'),[[c('back','main_menu')]]);break;
+                case'main_menu':wBot(wt('main_menu'),wMainBtns());break;
+                default:wBot(wt('main_menu'),wMainBtns());
+            }
+        }
+
+        function wHandleArea(text){
+            const m=text.replace(',','.').match(/[\d.]+/);
+            if(!m||isNaN(parseFloat(m[0]))||parseFloat(m[0])<=0){wBot(wt('invalid_area'));return}
+            const area=parseFloat(m[0]),p=W_PRICES[wSession.cat];if(!p){wCb('estimate_price');return}
+            const total=(area*p.rate).toFixed(2),lang=wLang||'ru';
+            const result=wt('estimate_result').replace('{name}',p.name[lang]||p.name.ru).replace('{area}',area).replace('{rate}',p.rate.toFixed(2)).replace('{total}',total).replace('{period}',p.period[lang]||p.period.ru);
+            wState='main_menu';
+            wBot(result,[[{text:wt('order'),data:'order'}],[{text:wt('contact_specialist'),data:'specialist'}],[{text:wt('main_menu_btn'),data:'main_menu'}]]);
+        }
+
+        // ── Calculator ──
+        let calcItems=[];
+        function wGetCalcType(cat){
+            if(cat==='scaffolding_modular'||cat==='scaffolding_frame')return'scaffolding';
+            if(cat==='slab_formwork')return'slab';
+            if(cat==='wall_formwork')return'wall';
+            return'scaffolding';
+        }
+
+        function wShowCalc(cat){
+            calcItems=[];
+            const type=wGetCalcType(cat);
+            const c=document.getElementById('wcMessages');
+            const el=document.createElement('div');el.className='wc-msg bot';el.style.maxWidth='95%';
+            const calc=document.createElement('div');calc.className='wc-calc';calc.id='wcCalcForm';
+
+            let titleKey='calc_title_scaffolding';
+            if(type==='slab')titleKey='calc_title_slab';
+            if(type==='wall')titleKey='calc_title_wall';
+
+            let fieldsHTML='';
+            if(type==='scaffolding'){
+                fieldsHTML=`
+                    <div class="wc-calc-row">
+                        <div class="wc-calc-field"><label>${wt('calc_length')}</label><input type="number" id="calcF1" placeholder="0.0" step="0.1" min="0"></div>
+                        <div class="wc-calc-field"><label>${wt('calc_height')}</label><input type="number" id="calcF2" placeholder="0.0" step="0.1" min="0"></div>
+                        <button class="wc-calc-add" onclick="wCalcAdd()">${wt('calc_add_wall')}</button>
+                    </div>`;
+            } else if(type==='slab'){
+                fieldsHTML=`
+                    <div class="wc-calc-row">
+                        <div class="wc-calc-field"><label>${wt('calc_length')}</label><input type="number" id="calcF1" placeholder="0.0" step="0.1" min="0"></div>
+                        <div class="wc-calc-field"><label>${wt('calc_width')}</label><input type="number" id="calcF2" placeholder="0.0" step="0.1" min="0"></div>
+                        <button class="wc-calc-add" onclick="wCalcAdd()">${wt('calc_add_room')}</button>
+                    </div>`;
+            } else {
+                fieldsHTML=`
+                    <div class="wc-calc-row">
+                        <div class="wc-calc-field"><label>${wt('calc_wall_length')}</label><input type="number" id="calcF1" placeholder="0.0" step="0.1" min="0"></div>
+                        <button class="wc-calc-add" onclick="wCalcAdd()">${wt('calc_add_wall_seg')}</button>
+                    </div>`;
+            }
+
+            const hintKey=type==='scaffolding'?'calc_hint_scaffolding':type==='slab'?'calc_hint_slab':'calc_hint_wall';
+
+            calc.innerHTML=`
+                <div class="wc-calc-title">${wt(titleKey)}</div>
+                ${fieldsHTML}
+                <div class="wc-calc-list" id="calcList"></div>
+                <div class="wc-calc-total" id="calcTotal" style="display:none">
+                    <span class="total-label">${wt('calc_total')}</span>
+                    <span class="total-value" id="calcTotalVal">0 ${wt('calc_m2')}</span>
+                </div>
+                <button class="wc-calc-submit" id="calcSubmit" disabled onclick="wCalcSubmit()">${wt('calc_submit')}</button>
+                <div class="wc-calc-hint">${wt(hintKey)}</div>
+            `;
+
+            el.appendChild(calc);
+            const tm=document.createElement('div');tm.className='wc-time';tm.textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});el.appendChild(tm);
+            c.appendChild(el);requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight});
+
+            // Focus first field
+            setTimeout(()=>{const f=document.getElementById('calcF1');if(f)f.focus()},100);
+
+            // Enter key support
+            setTimeout(()=>{
+                const inputs=calc.querySelectorAll('input');
+                inputs.forEach(inp=>{inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();wCalcAdd()}})});
+            },50);
+        }
+
+        function wCalcAdd(){
+            const type=wGetCalcType(wSession.cat);
+            const f1=document.getElementById('calcF1');
+            const f2=document.getElementById('calcF2');
+            const v1=parseFloat((f1?f1.value:'').replace(',','.'));
+            const v2=f2?parseFloat((f2.value||'').replace(',','.')):0;
+
+            if(type==='wall'){
+                if(!v1||v1<=0){f1.style.borderColor='#ef4444';setTimeout(()=>f1.style.borderColor='',1000);return}
+                calcItems.push({length:v1});
+            } else {
+                if(!v1||v1<=0){f1.style.borderColor='#ef4444';setTimeout(()=>f1.style.borderColor='',1000);return}
+                if(!v2||v2<=0){f2.style.borderColor='#ef4444';setTimeout(()=>f2.style.borderColor='',1000);return}
+                calcItems.push({d1:v1,d2:v2});
+            }
+
+            if(f1)f1.value='';
+            if(f2)f2.value='';
+            if(f1)f1.focus();
+
+            wCalcRender();
+        }
+
+        function wCalcRemove(i){
+            calcItems.splice(i,1);
+            wCalcRender();
+        }
+
+        function wCalcRender(){
+            const type=wGetCalcType(wSession.cat);
+            const list=document.getElementById('calcList');
+            const totalEl=document.getElementById('calcTotal');
+            const totalVal=document.getElementById('calcTotalVal');
+            const submitBtn=document.getElementById('calcSubmit');
+            if(!list)return;
+
+            list.innerHTML='';
+            let totalArea=0;
+
+            if(type==='wall'){
+                let perimeter=0;
+                calcItems.forEach((item,i)=>{
+                    perimeter+=item.length;
+                    const el=document.createElement('div');el.className='wc-calc-item';
+                    el.innerHTML=`<span class="calc-label">${wt('calc_wall_n')} ${i+1}</span><span class="calc-value">${item.length} ${wt('calc_m')}</span><button class="calc-del" onclick="wCalcRemove(${i})">✕</button>`;
+                    list.appendChild(el);
+                });
+                totalArea=perimeter*2*1.2;
+                if(calcItems.length>0){
+                    const perimRow=document.createElement('div');perimRow.className='wc-calc-item';
+                    perimRow.style.borderTop='1px solid rgba(255,255,255,.06)';
+                    perimRow.style.marginTop='4px';perimRow.style.paddingTop='8px';
+                    perimRow.innerHTML=`<span class="calc-label">${wt('calc_perimeter')}</span><span class="calc-value">${perimeter.toFixed(1)} ${wt('calc_m')} × 2 × 1.2</span><span></span>`;
+                    list.appendChild(perimRow);
+                }
+            } else {
+                const labelKey=type==='scaffolding'?'calc_wall_n':'calc_room_n';
+                calcItems.forEach((item,i)=>{
+                    const area=item.d1*item.d2;
+                    totalArea+=area;
+                    const dim2Label=type==='scaffolding'?wt('calc_height'):wt('calc_width');
+                    const el=document.createElement('div');el.className='wc-calc-item';
+                    el.innerHTML=`<span class="calc-label">${wt(labelKey)} ${i+1}: ${item.d1}×${item.d2}</span><span class="calc-value">${area.toFixed(1)} ${wt('calc_m2')}</span><button class="calc-del" onclick="wCalcRemove(${i})">✕</button>`;
+                    list.appendChild(el);
+                });
+            }
+
+            if(calcItems.length>0){
+                totalEl.style.display='flex';
+                totalVal.textContent=totalArea.toFixed(1)+' '+wt('calc_m2');
+                submitBtn.disabled=false;
+            } else {
+                totalEl.style.display='none';
+                submitBtn.disabled=true;
+            }
+
+            const c=document.getElementById('wcMessages');
+            requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight});
+        }
+
+        function wCalcSubmit(){
+            const type=wGetCalcType(wSession.cat);
+            let totalArea=0;
+
+            if(type==='wall'){
+                let perimeter=0;
+                calcItems.forEach(item=>perimeter+=item.length);
+                totalArea=perimeter*2*1.2;
+            } else {
+                calcItems.forEach(item=>totalArea+=item.d1*item.d2);
+            }
+
+            // Disable calc form
+            const form=document.getElementById('wcCalcForm');
+            if(form){
+                form.querySelectorAll('input,button').forEach(el=>el.disabled=true);
+                form.style.opacity='.6';
+            }
+
+            const area=Math.round(totalArea*100)/100;
+            const p=W_PRICES[wSession.cat];if(!p){wCb('estimate_price');return}
+            const total=(area*p.rate).toFixed(2),lang=wLang||'ru';
+            const result=wt('estimate_result').replace('{name}',p.name[lang]||p.name.ru).replace('{area}',area).replace('{rate}',p.rate.toFixed(2)).replace('{total}',total).replace('{period}',p.period[lang]||p.period.ru);
+            wState='main_menu';
+            wShowTyping();
+            setTimeout(()=>{
+                wBot(result,[[{text:wt('order'),data:'order'}],[{text:wt('contact_specialist'),data:'specialist'}],[{text:wt('main_menu_btn'),data:'main_menu'}]]);
+            },500);
+        }
+
+        function wMainBtns(){return[[{text:wt('consultation'),data:'consultation'}],[{text:wt('equipment'),data:'equipment'}],[{text:wt('prices'),data:'prices'}],[{text:wt('estimate_price'),data:'estimate_price'}],[{text:wt('contacts'),data:'contacts'}],[{text:wt('working_hours'),data:'working_hours'}]]}
+
+        function wBot(text,buttons){wHideTyping();wAppend({text,role:'bot',buttons});if(wTtsOn)wSpeak(text)}
+
+        function wAppend(msg){
+            wHideTyping();const c=document.getElementById('wcMessages');const el=document.createElement('div');el.className='wc-msg '+msg.role;
+            const b=document.createElement('div');b.className='wc-bubble';b.textContent=msg.text;el.appendChild(b);
+            if(msg.buttons&&msg.buttons.length){
+                const btns=document.createElement('div');btns.className='wc-btns';
+                msg.buttons.forEach(row=>{
+                    const r=document.createElement('div');r.className='btn-row';
+                    row.forEach(btn=>{
+                        const bt=document.createElement('button');bt.textContent=btn.text;
+                        bt.onclick=()=>{bt.style.background='rgba(124,58,237,0.4)';btns.querySelectorAll('button').forEach(x=>{x.disabled=true});wShowTyping();setTimeout(()=>wCb(btn.data),400+Math.random()*400)};
+                        r.appendChild(bt);
+                    });btns.appendChild(r);
+                });el.appendChild(btns);
+            }
+            const tm=document.createElement('div');tm.className='wc-time';tm.textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});el.appendChild(tm);
+            c.appendChild(el);requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight});
+        }
+
+        function wShowTyping(){wHideTyping();const c=document.getElementById('wcMessages');const t=document.createElement('div');t.className='wc-typing';t.id='wcTyping';for(let i=0;i<3;i++){const d=document.createElement('div');d.className='dot';t.appendChild(d)}c.appendChild(t);requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight})}
+        function wHideTyping(){const e=document.getElementById('wcTyping');if(e)e.remove()}
+
+        // ── TTS ──
+        const W_LANG_TTS={ru:'ru-RU',lv:'lv-LV',en:'en-US'};
+        function wToggleTTS(){wTtsOn=!wTtsOn;document.getElementById('wcTts').classList.toggle('tts-on',wTtsOn)}
+        function wSpeak(text){
+            if(!('speechSynthesis' in window))return;
+            window.speechSynthesis.cancel();
+            const clean=text.replace(/[🏗️🔩🧱📐📞📧🌐⏰⚠️💰📊🎓👷🛒💡📌🔍🔄🇱🇻🇷🇺🇬🇧✅💪⬅️]/g,'').trim();
+            if(!clean)return;
+            const u=new SpeechSynthesisUtterance(clean);
+            u.lang=W_LANG_TTS[wLang||'ru']||'ru-RU';u.rate=1;u.pitch=1;
+            window.speechSynthesis.speak(u);
+        }
+
+        // ── Voice STT ──
+        let wRec=null,wIsRec=false;
+        const W_LANG_STT={ru:'ru-RU',lv:'lv-LV',en:'en-US'};
+        function wToggleVoice(){wIsRec?wStopRec():wStartRec()}
+        function wStartRec(){
+            const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Voice not supported');return}
+            wRec=new SR();wRec.continuous=false;wRec.interimResults=true;wRec.lang=W_LANG_STT[wLang||'ru']||'ru-RU';
+            wRec.onresult=(e)=>{let f='',im='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)f+=e.results[i][0].transcript;else im+=e.results[i][0].transcript}const inp=document.getElementById('wcInput');if(f){inp.value=f;wStopRec();wSend()}else{inp.value=im}};
+            wRec.onerror=()=>wStopRec();wRec.onend=()=>{if(wIsRec)wStopRec()};
+            wIsRec=true;document.getElementById('wcMic').classList.add('recording');
+            const vis=document.getElementById('voiceVis');vis.innerHTML='';vis.classList.add('active');
+            for(let i=0;i<32;i++){const bar=document.createElement('div');bar.className='bar';bar.style.height=Math.random()*20+4+'px';bar.style.animationDelay=i*0.04+'s';vis.appendChild(bar)}
+            wAnimateVoiceBars();
+            try{wRec.start()}catch(e){wStopRec()}
+        }
+        function wStopRec(){
+            wIsRec=false;document.getElementById('wcMic').classList.remove('recording');
+            document.getElementById('voiceVis').classList.remove('active');
+            if(wRec){try{wRec.stop()}catch(e){}wRec=null}
+        }
+        function wAnimateVoiceBars(){
+            if(!wIsRec)return;
+            const bars=document.getElementById('voiceVis').querySelectorAll('.bar');
+            bars.forEach(b=>{b.style.height=Math.random()*24+3+'px'});
+            requestAnimationFrame(()=>setTimeout(wAnimateVoiceBars,80));
+        }
+    </script>
+</body>
+</html>
