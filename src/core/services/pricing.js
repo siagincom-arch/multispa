@@ -1,19 +1,11 @@
 // Bot Multispa — Pricing Service
 // Информация о ценах, ориентировочный расчёт стоимости аренды
+// Ставки загружаются из Supabase (таблица rental_rates)
 
 const { t } = require('../../i18n');
 const { setState, setData, getData, STATES } = require('../dialog');
+const RentalRates = require('../../db/models/rental_rates');
 const logger = require('../utils/logger');
-
-/**
- * Цены за единицу (€/м²)
- */
-const PRICES = {
-    scaffolding_modular: { rate: 2.20, period: 'month' },
-    scaffolding_frame: { rate: 1.40, period: 'month' },
-    wall_formwork: { rate: 6.00, period: 'week' },
-    slab_formwork: { rate: 3.00, period: 'week' },
-};
 
 /**
  * Показать ценовую информацию
@@ -73,12 +65,13 @@ function askForArea(userId, category, lang) {
 
 /**
  * Обработать ввод площади и рассчитать ориентировочную цену
+ * Ставки загружаются из Supabase
  * @param {string} userId
  * @param {string} text — текст с числом (площадь в м²)
  * @param {string} lang
- * @returns {object[]}
+ * @returns {Promise<object[]>}
  */
-function handleAreaInput(userId, text, lang) {
+async function handleAreaInput(userId, text, lang) {
     // Извлечь число из текста
     const areaMatch = text.replace(',', '.').match(/[\d.]+/);
     if (!areaMatch) {
@@ -95,7 +88,7 @@ function handleAreaInput(userId, text, lang) {
     }
 
     const category = getData(userId, 'estimate_category');
-    const priceData = PRICES[category];
+    const priceData = await RentalRates.getByCategory(category);
 
     if (!priceData) {
         logger.warn('Unknown estimate category', { category });
@@ -133,5 +126,4 @@ module.exports = {
     askEstimateCategory,
     askForArea,
     handleAreaInput,
-    PRICES,
 };

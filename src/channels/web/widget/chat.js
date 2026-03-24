@@ -1,9 +1,90 @@
 // Bot Multispa — Chat Widget Frontend Logic
-// Управление чатом: подключение Socket.io, отправка/получение сообщений
+// Управление чатом: подключение Socket.io, отправка/получение сообщений, голосовой ввод
 
 const socket = io();
 let chatOpen = false;
 let unreadCount = 0;
+
+// ─── Голосовой ввод (Web Speech API) ───
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    // Автоопределение языка — начинаем с русского, можно расширить
+    recognition.lang = 'ru-RU';
+
+    recognition.onresult = (event) => {
+        const input = document.getElementById('chat-input');
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        input.value = transcript;
+
+        // Если результат финальный — отправляем
+        if (event.results[event.results.length - 1].isFinal) {
+            stopVoice();
+            if (transcript.trim()) {
+                sendMessage();
+            }
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        stopVoice();
+    };
+
+    recognition.onend = () => {
+        stopVoice();
+    };
+} else {
+    // Браузер не поддерживает — скрыть кнопку
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('chat-voice-btn');
+        if (btn) btn.classList.add('hidden');
+    });
+}
+
+function toggleVoice() {
+    if (!recognition) return;
+    if (isRecording) {
+        recognition.stop();
+    } else {
+        startVoice();
+    }
+}
+
+function startVoice() {
+    if (!recognition) return;
+    try {
+        recognition.start();
+        isRecording = true;
+        const btn = document.getElementById('chat-voice-btn');
+        btn.classList.add('recording');
+        document.getElementById('chat-input').placeholder = 'Говорите...';
+    } catch (e) {
+        console.warn('Failed to start recognition:', e);
+    }
+}
+
+function stopVoice() {
+    isRecording = false;
+    const btn = document.getElementById('chat-voice-btn');
+    if (btn) {
+        btn.classList.remove('recording');
+    }
+    const input = document.getElementById('chat-input');
+    if (input) {
+        input.placeholder = 'Введите сообщение...';
+    }
+}
 
 // ─── Подключение ───
 socket.on('connect', () => {

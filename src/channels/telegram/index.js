@@ -6,6 +6,7 @@ const { getUserLanguage } = require('../../core/language');
 const DialogLogs = require('../../db/models/dialog_logs');
 const Clients = require('../../db/models/clients');
 const logger = require('../../core/utils/logger');
+const { authMiddleware } = require('./auth');
 
 /**
  * Create and configure the Telegram bot
@@ -17,6 +18,9 @@ function createTelegramBot() {
     }
 
     const bot = new Bot(config.bot.token);
+
+    // Авторизация по Telegram User ID
+    bot.use(authMiddleware);
 
     // Error handler
     bot.catch((err) => {

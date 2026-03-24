@@ -360,6 +360,43 @@ body {
     border-color: var(--primary);
 }
 
+.chat-voice {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+
+.chat-voice:hover {
+    color: var(--text-primary);
+    border-color: var(--primary);
+}
+
+.chat-voice.recording {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+    border-color: #ef4444;
+    animation: voice-pulse 1.5s infinite;
+}
+
+.chat-voice.hidden {
+    display: none;
+}
+
+@keyframes voice-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
 .chat-send {
     width: 44px;
     height: 44px;
