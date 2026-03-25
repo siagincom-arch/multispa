@@ -100,7 +100,7 @@ function formatEquipmentInfo(equipment, lang = 'ru') {
         equipment.prices.forEach(p => {
             const type = priceLabels[p.type]?.[lang] || p.type;
             const period = periodLabels[p.period]?.[lang] || p.period;
-            const vat = p.vat_included ? '' : ' + PVN/НДС/VAT';
+            const vat = p.vat_included ? '' : ' + PVN/НДС/VAT 21%';
             text += `${type}: ${p.price_per_unit} €/${p.unit} ${vat} / ${period}`;
             if (p.notes) text += ` (${p.notes})`;
         });

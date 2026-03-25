@@ -74,6 +74,7 @@ async function processMessage({ text, userId, channel = 'telegram', files, callb
  */
 async function handleStart(userId, channel) {
     resetSession(userId);
+    ai.clearHistory(userId);
     await Clients.findOrCreate(userId, channel);
 
     return [{
@@ -152,7 +153,7 @@ async function handleAIResponse(userId, text, lang, channel) {
     const ctx = await withClientContext(userId, text, lang, channel);
     lang = ctx.lang;
 
-    const aiResponse = await ai.generateResponse(text, lang);
+    const aiResponse = await ai.generateResponse(text, lang, null, userId);
 
     if (aiResponse) {
         if (ctx.client) {
