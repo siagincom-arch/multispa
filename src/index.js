@@ -1,8 +1,34 @@
 // Bot Multispa — Main Entry Point
 const { createTelegramBot } = require('./channels/telegram');
 const { createWebServer } = require('./channels/web');
+const supabase = require('./db/supabase');
 const logger = require('./core/utils/logger');
 const config = require('./config');
+
+// Supabase keep-alive: пингуем каждые 4 дня, чтобы проект не засыпал
+const KEEP_ALIVE_INTERVAL = 4 * 24 * 60 * 60 * 1000; // 4 дня в мс
+
+function startSupabaseKeepAlive() {
+    const ping = async () => {
+        try {
+            const { error } = await supabase.from('rental_rates').select('id').limit(1);
+            if (error) {
+                logger.warn('⚠️ Supabase keep-alive error', { error: error.message });
+            } else {
+                logger.info('💚 Supabase keep-alive ping OK');
+            }
+        } catch (e) {
+            logger.error('❌ Supabase keep-alive failed', { error: e.message });
+        }
+    };
+
+    // Первый пинг сразу при старте
+    ping();
+    // Далее каждые 4 дня
+    const timer = setInterval(ping, KEEP_ALIVE_INTERVAL);
+    timer.unref(); // не блокируем завершение процесса
+    return timer;
+}
 
 async function main() {
     logger.info('🏗️ Bot Multispa starting...', {
@@ -25,6 +51,10 @@ async function main() {
             });
         },
     });
+
+    // Запускаем keep-alive пинг Supabase
+    startSupabaseKeepAlive();
+    logger.info('🔄 Supabase keep-alive scheduled (every 4 days)');
 
     // Graceful shutdown — stop bot and server before exiting
     const shutdown = async (signal) => {
