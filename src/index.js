@@ -5,8 +5,8 @@ const supabase = require('./db/supabase');
 const logger = require('./core/utils/logger');
 const config = require('./config');
 
-// Supabase keep-alive: пингуем каждые 4 дня, чтобы проект не засыпал
-const KEEP_ALIVE_INTERVAL = 4 * 24 * 60 * 60 * 1000; // 4 дня в мс
+// Supabase keep-alive: пингуем каждые 3 дня, чтобы проект не засыпал (лимит — 7 дней)
+const KEEP_ALIVE_INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 дня в мс
 
 function startSupabaseKeepAlive() {
     const ping = async () => {
@@ -54,7 +54,7 @@ async function main() {
 
     // Запускаем keep-alive пинг Supabase
     startSupabaseKeepAlive();
-    logger.info('🔄 Supabase keep-alive scheduled (every 4 days)');
+    logger.info('🔄 Supabase keep-alive scheduled (every 3 days)');
 
     // Graceful shutdown — stop bot and server before exiting
     const shutdown = async (signal) => {

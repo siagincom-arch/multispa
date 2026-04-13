@@ -1,0 +1,25 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Каждые 3 дня в 08:00 UTC (надёжный запас до 7-дневного лимита)
+    - cron: '0 8 */3 * *'
+  workflow_dispatch: # ручной запуск для теста
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rental_rates?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}")
+          echo "Supabase response code: $response"
+          if [ "$response" -ge 200 ] && [ "$response" -lt 300 ]; then
+            echo "✅ Supabase keep-alive OK"
+          else
+            echo "❌ Supabase returned $response"
+            exit 1
+          fi
